@@ -137,14 +137,24 @@ rng(111);
 
 sub_ids_include = sub_ids(sub_idx_include);
 
+ages = gene_data_table.Age_in_Yrs;
+genders = behav_data_table.Gender;
+num_female = sum(strcmp(genders(sub_idx_include),'F'));
+mean_age = mean(ages(sub_idx_include));
+std_age = std(ages(sub_idx_include));
+fprintf('Total number of subjects (After Filtering): %d, Female=%d, mean age=%0.2f, std=%0.2f \n\n', ...
+    sum(sub_idx_include),num_female,mean_age,std_age);
+
 sub_ids_include = sub_ids_include(randperm(length(sub_ids_include)));
+
+[sub_ids_include, inc_idx] = filterRelatedSubjects(gene_data_table, sub_ids_include);
+
+%%
 
 sub_ids_set1_explore = sort(sub_ids_include(1:50));
 sub_ids_set1_test = sort(sub_ids_include(51:100));
 sub_ids_set2_explore = sort(sub_ids_include(101:150));
 sub_ids_set2_test = sort(sub_ids_include(151:200));
-ages = gene_data_table.Age_in_Yrs;
-genders = behav_data_table.Gender;
 
 [~,IA,~] = intersect(sub_ids,sub_ids_set1_explore);
 num_female = sum(strcmp(genders(IA),'F'));
@@ -180,3 +190,46 @@ save results/split_subjects sub_idx_exclude sub_idx_include does_not_data_exist 
 sub_ids_include_net = sort(sub_ids_include(1:200));
 
 writematrix(sub_ids_include_net,'results/sub_ids_include.txt');
+
+%% Functions
+function [filteredIDs,filteredIDXs] = filterRelatedSubjects(dataTable, goodIDs)
+    % 결과를 담을 벡터
+    filteredIDs = [];
+    filteredIDXs = [];
+    % 이미 제외된(건너뛸) ID를 모아둘 집합
+    excludeSet = [];
+    
+    % 순회
+    for i = 1:numel(goodIDs)
+        sid = goodIDs(i);
+        % 이미 제외된 ID면 건너뛰기
+        if ismember(sid, excludeSet)
+            continue;
+        end
+        
+        % 첫 등장 피험자로 확정
+        filteredIDs(end+1,1) = sid; %#ok<AGROW>
+        filteredIDXs(end+1,1) = i; %#ok<AGROW>
+        
+        % 이 피험자의 행 인덱스
+        row = find(dataTable.Subject == sid, 1);
+        if isempty(row)
+            warning('Subject ID %d not found in dataTable.', sid);
+            continue;
+        end
+        
+        dad = dataTable.Father_ID(row);
+        mom = dataTable.Mother_ID(row);
+%         fam = dataTable.FamilyID(row);
+
+        % 같은 FatherID를 가진 모든 SubjectID
+        sameDad = dataTable.Subject(dataTable.Father_ID == dad & dataTable.Subject~=sid);
+        % 같은 MotherID를 가진 모든 SubjectID
+        sameMom = dataTable.Subject(dataTable.Mother_ID == mom & dataTable.Subject~=sid);
+%         % 같은 FamilyID를 가진 모든 SubjectID
+%         sameFam = dataTable.SubjectID(dataTable.FamilyID == fam & dataTable.SubjectID~=sid);
+
+        % 제외할 ID들에 추가
+        excludeSet = unique([excludeSet; sameDad; sameMom]);
+    end
+end
