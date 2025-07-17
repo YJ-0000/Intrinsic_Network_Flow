@@ -195,7 +195,7 @@ writematrix(sub_ids_include_net,'results/sub_ids_include.txt');
 function [filteredIDs,filteredIDXs] = filterRelatedSubjects(dataTable, goodIDs)
     % 결과를 담을 벡터
     filteredIDs = [];
-    filteredIDXs = [];
+    filteredIDXs = false(1,numel(goodIDs));
     % 이미 제외된(건너뛸) ID를 모아둘 집합
     excludeSet = [];
     
@@ -209,7 +209,7 @@ function [filteredIDs,filteredIDXs] = filterRelatedSubjects(dataTable, goodIDs)
         
         % 첫 등장 피험자로 확정
         filteredIDs(end+1,1) = sid; %#ok<AGROW>
-        filteredIDXs(end+1,1) = i; %#ok<AGROW>
+        filteredIDXs(i) = true;
         
         % 이 피험자의 행 인덱스
         row = find(dataTable.Subject == sid, 1);
