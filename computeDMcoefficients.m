@@ -1,11 +1,11 @@
-function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U)
+function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B)
 %COMPUTESEGMENTCOEFFICIENTS 한 구간에 대해 Z·D = W 를 풀고
 %                       V*Y_seg의 절댓값 평균/분산을 구함
 %
 %   INPUT:
 %     X               - (P x T) fMRI time-series
 %     U               - (R x M) DM vectors
-%
+%     B               - (P x (T-1)) mode amplitude (optional)
 %   OUTPUT:
 %     D       - ((M+1) x 1)   evolution coefficient
 %     B_mean  - (M x 1)       Mean engagement level
@@ -14,18 +14,21 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U)
     Y_seg = X(:,1:end-1);
     
     V=pinv(U);
-%     residual_matrix = eye(size(U,1)) - U*V;
     
     num_DMs = size(U, 2);
 
-    % Z, W 임시 행렬 초기화
+    % initialize
     Z_temp = zeros(num_DMs+1, num_DMs+1);
     W_temp = zeros(num_DMs+1, 1);
 
-    % 변환
+    % Projection for mode amplitude   
+    if nargin < 3
+        VY      = V * Y_seg;      % (M x T')
+    else
+        VY      = B;
+    end
     resid_Y = Y_seg - U*(V*Y_seg);       % (R x T')
-    VY      = V(1:num_DMs, :) * Y_seg;      % (M x T')
-
+    
     % Z_temp(1,1)
     Z_temp(1,1) = sum(dot(resid_Y, resid_Y, 1));
 
@@ -49,7 +52,7 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U)
         W_temp(k+1) = sum(dot(U(:,k) * VY(k,:), X_seg, 1));
     end
 
-    % 해 계산
+    % Least-square solution
     if size(U,2) < size(X,1)
         D       = Z_temp \ W_temp;
         
