@@ -237,7 +237,7 @@ for target_dim = target_dim_list
     [U,S,V] = svd(Y,'econ');
     temp_v = pinv(Y) * Phi_all;
     
-    YY = A2/num_subjects;
+    Z = A2/num_subjects;
 
     %% reconstruct exact mode
     Phi_orig = zeros(voxel_num,size(Phi_all,2));
@@ -325,7 +325,7 @@ for target_dim = target_dim_list
             if strcmp(method_subject_proj, 'DR')
                 temp_v = pinv(time_course_sub(:,2:end)) * Phi_all;
             elseif strcmp(method_subject_proj, 'TL-cov')
-                temp_v = (time_course_sub(:,1:end-1)' / (YY)) * Phi_all;
+                temp_v = (time_course_sub(:,1:end-1)' / (Z)) * Phi_all;
             else
                 error('Not defined projection methods!!');
             end
@@ -359,7 +359,7 @@ for target_dim = target_dim_list
             if strcmp(method_subject_proj, 'DR')
                 temp_v = pinv(time_course_sub(:,2:end)) * Phi_all;
             elseif strcmp(method_subject_proj, 'TL-cov')
-                temp_v = (time_course_sub(:,1:end-1)' / (YY)) * Phi_all;
+                temp_v = (time_course_sub(:,1:end-1)' / (Z)) * Phi_all;
             else
                 error('Not defined projection methods!!');
             end
@@ -411,5 +411,5 @@ for target_dim = target_dim_list
     else
         error('Undefined sample set!!');
     end
-    save(filename, 'lambda', 'Phi_all', 'Phi_orig', 'D', 'W', 'A', 'source_maps', 'G_group','lambda_k_group','inv_source','R2*list','*time_window_list');
+    save(filename, 'lambda', 'Phi_all', 'Phi_orig', 'D', 'W', 'A', 'Z', 'source_maps', 'G_group','lambda_k_group','inv_source','R2*list','*time_window_list');
 end

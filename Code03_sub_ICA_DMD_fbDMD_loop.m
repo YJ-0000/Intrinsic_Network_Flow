@@ -8,26 +8,39 @@ current_path = pwd;
 
 method_subject_proj_list = {'DR','TL-cov'}; % DR or TL-cov
 
-target_dim_list = 10:10:100; 
-% target_dim_list = 21:1:29; 
+sample_set = 'discovery';
+% sample_set = 'replication';
 
 fitting_time_window_list =  [1];
 predict_time_window_list = [1,2,4,8];
 
 %%
+
 data_load = load('secure_info\path_info.mat');
 HCP_data_path = data_load.HCP_denoised_path;
 data_load = load('results/split_subjects.mat');
-data_folders = data_load.data_folders;
 
+data_folders = data_load.data_folders;
 sub_ids = data_load.sub_ids;
-sub_ids_set1_explore = data_load.sub_ids_set1_explore;
-[~,IA,~] = intersect(sub_ids,sub_ids_set1_explore);
+if strcmp(sample_set,'discovery')
+    sub_ids_set_explore = data_load.sub_ids_set1_explore;
+elseif strcmp(sample_set, 'replication')
+    sub_ids_set_explore = data_load.sub_ids_set2_explore;
+else
+    error('Undefined sample set!!');
+end
+[~,IA,~] = intersect(sub_ids,sub_ids_set_explore);
 data_folders = data_folders(IA);
 
 sub_ids = data_load.sub_ids;
-sub_ids_set1_test = data_load.sub_ids_set1_test;
-[~,IA,~] = intersect(sub_ids,sub_ids_set1_test);
+if strcmp(sample_set,'discovery')
+    sub_ids_set_test = data_load.sub_ids_set1_test;
+elseif strcmp(sample_set, 'replication')
+    sub_ids_set_test = data_load.sub_ids_set2_test;
+else
+    error('Undefined sample set!!');
+end
+[~,IA,~] = intersect(sub_ids,sub_ids_set_test);
 data_folders_test = data_load.data_folders;
 data_folders_test = data_folders_test(IA);
 
