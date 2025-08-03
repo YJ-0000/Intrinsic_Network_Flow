@@ -65,8 +65,8 @@ foreach ($folder in $data_folders) {
         }
 
         # Generate wb_command strings (wrap paths in quotes to handle spaces)
-        $cmd_LR = "wb_command -cifti-smoothing `"$input_datafile_path_LR`" 6 6 COLUMN `"$output_datafile_path_LR`" -fwhm -left-surface \atlas\Q1-Q6_R440.L.midthickness.32k_fs_LR.surf.gii -right-surface \atlas\Q1-Q6_R440.R.midthickness.32k_fs_LR.surf.gii"
-        $cmd_RL = "wb_command -cifti-smoothing `"$input_datafile_path_RL`" 6 6 COLUMN `"$output_datafile_path_RL`" -fwhm -left-surface \atlas\Q1-Q6_R440.L.midthickness.32k_fs_LR.surf.gii -right-surface \atlas\Q1-Q6_R440.R.midthickness.32k_fs_LR.surf.gii"
+        $cmd_LR = "wb_command -cifti-smoothing `"$input_datafile_path_LR`" 6 6 COLUMN `"$output_datafile_path_LR`" -fwhm -left-surface .\atlas\Q1-Q6_R440.L.midthickness.32k_fs_LR.surf.gii -right-surface .\atlas\Q1-Q6_R440.R.midthickness.32k_fs_LR.surf.gii"
+        $cmd_RL = "wb_command -cifti-smoothing `"$input_datafile_path_RL`" 6 6 COLUMN `"$output_datafile_path_RL`" -fwhm -left-surface .\atlas\Q1-Q6_R440.L.midthickness.32k_fs_LR.surf.gii -right-surface .\atlas\Q1-Q6_R440.R.midthickness.32k_fs_LR.surf.gii"
         
         # Output the commands for verification
         Write-Output "Subject: $subname, REST: $REST_num"
