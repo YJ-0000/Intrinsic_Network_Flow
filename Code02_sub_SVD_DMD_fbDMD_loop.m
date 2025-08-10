@@ -148,7 +148,14 @@ for target_dim = target_dim_list
     dtStr = datestr(now, 'yyyymmdd_HHMMSS');
 
     % Create a filename using the datetime string
-    filename = ['results/subject_wise_exact_',num2str(target_dim,'%03d'),'_dmd_results_normalized_' dtStr '.mat'];
+    if strcmp(sample_set,'discovery')
+        filename = ['results/subject_wise_exact_',num2str(target_dim,'%03d'),'_dmd_results_normalized_' dtStr '.mat'];
+    elseif strcmp(sample_set, 'replication')
+        filename = ['results/repl_subject_wise_exact_', num2str(target_dim,'%03d'), '_dmd_results_normalized_' dtStr '.mat'];
+    else
+        error('Undefined sample set!!');
+    end
+    
     save(filename, 'R2*array_list','*time_window_list');
 end
 

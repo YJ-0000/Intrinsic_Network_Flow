@@ -6,7 +6,7 @@ current_path = pwd;
 
 %% Run options
 
-method_subject_proj_list = {'DR','TL-cov'}; % DR or TL-cov
+target_dim_list = 10:10:100; 
 
 sample_set = 'discovery';
 % sample_set = 'replication';
@@ -177,24 +177,80 @@ for target_dim = target_dim_list
     dtStr = datestr(now, 'yyyymmdd_HHMMSS');
 
     % Create a filename using the datetime string
-    filename = ['results/subject_wise_ica',num2str(target_dim,'%03d'),'_dmd_results_normalized_' dtStr '.mat'];
+    if strcmp(sample_set,'discovery')
+        filename = ['results/subject_wise_ica',num2str(target_dim,'%03d'),'_dmd_results_normalized_' dtStr '.mat'];
+    elseif strcmp(sample_set, 'replication')
+        filename = ['results/repl_subject_wise_ica', num2str(target_dim,'%03d'), '_dmd_results_normalized_' dtStr '.mat'];
+    else
+        error('Undefined sample set!!');
+    end
+    
     save(filename, 'R2*array_list','*time_window_list');
 end
 
 %%
-function [Phi_all,lambda] = performDMD(X,Y,time_len,TRtarget)
-    A1 = X*Y'; A2 = Y*Y';
+
+%%
+function [Phi_all, lambda] = performDMD(X, Y, time_len, TRtarget)
+    % Precompute forward and backward operators
+    A1 = X * Y';
+    A2 = Y * Y';
     A_f = A1 * pinv(A2);
-    B1 = Y*X'; B2 = X*X';
+
+    B1 = Y * X';
+    B2 = X * X';
     A_b = B1 * pinv(B2);
-    A = (A_f/A_b)^0.5;
+
+    % Initialize warning record
+    lastwarn('');
+
+    % Try to compute A = sqrt(A_f / A_b)
+    try
+        A = (A_f / A_b) ^ 0.5;
+    catch ME
+        warning('performDMD:MatrixPowerFailed', ...
+            'Error computing matrix square root: %s. Falling back to A_f.', ME.message);
+        A = A_f;
+    end
+
+    % If any warning occurred during matrix power, fall back
+    [warnMsg, ~] = lastwarn;
+    if ~isempty(warnMsg)
+        warning('performDMD:MatrixPowerWarning', ...
+            'Warning during matrix power: "%s". Falling back to A_f.', warnMsg);
+        A = A_f;
+    end
+
+    % Retain only the real part
     A = real(A);
 
+    % Clear warnings before eigen decomposition
+    lastwarn('');
 
-    [Phi_all,D] = eig(A);
+    % Perform eigen decomposition on A
+    try
+        [Phi_all, D] = eig(A);
+    catch ME
+        warning('performDMD:EigFailed', ...
+            'Error during eig(A): %s. Falling back to eig(A_f).', ME.message);
+        [Phi_all, D] = eig(A_f);
+    end
+
+    % If any warning occurred during eig(A), fall back
+    [warnMsg, ~] = lastwarn;
+    if ~isempty(warnMsg)
+        warning('performDMD:EigWarning', ...
+            'Warning during eig(A): "%s". Falling back to eig(A_f).', warnMsg);
+        [Phi_all, D] = eig(A_f);
+    end
+
+    % Extract eigenvalues
     lambda = diag(D);
-    
-%     idx_exclude = abs(lambda) < 1e-4 | 2*pi*TRtarget ./ abs(angle(lambda)) > time_len * TRtarget;
-%     lambda(idx_exclude) = [];
-%     Phi_all(:,idx_exclude) = [];
+
+    % (Optional) Mode filtering based on magnitude or period
+    % idx_exclude = abs(lambda) < 1e-4 | ...
+    %               2*pi*TRtarget ./ abs(angle(lambda)) > time_len * TRtarget;
+    % lambda(idx_exclude) = [];
+    % Phi_all(:,idx_exclude) = [];
 end
+
