@@ -260,7 +260,6 @@ for target_dim = target_dim_list
 
         fprintf(['Normalizing data ... sub-',subname,' rfMRI LR \n']);
         data_normalized = normalize(data')';
-        data_normalized = data_normalized - mean(data_normalized);
 
         temp_prod = data_normalized(:,2:end) * temp_v(tcount:tcount+(temporal_dim-1)-1,:);
         tcount = tcount + (temporal_dim-1);
@@ -277,7 +276,6 @@ for target_dim = target_dim_list
 
         fprintf(['Normalizing data ... sub-',subname,' rfMRI LR \n']);
         data_normalized = normalize(data')';
-        data_normalized = data_normalized - mean(data_normalized);
 
         temp_prod = data_normalized(:,2:end) * temp_v(tcount:tcount+(temporal_dim-1)-1,:);
         tcount = tcount + (temporal_dim-1);
