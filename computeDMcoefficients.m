@@ -1,4 +1,4 @@
-function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B)
+function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B, X_seg, Y_seg)
 %COMPUTESEGMENTCOEFFICIENTS 한 구간에 대해 Z·D = W 를 풀고
 %                       V*Y_seg의 절댓값 평균/분산을 구함
 %
@@ -9,9 +9,11 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B)
 %   OUTPUT:
 %     D       - ((M+1) x 1)   evolution coefficient
 %     B_mean  - (M x 1)       Mean engagement level
-
-    X_seg = X(:,2:end);
-    Y_seg = X(:,1:end-1);
+    
+    if nargin < 4
+        X_seg = X(:,2:end);
+        Y_seg = X(:,1:end-1);
+    end
     
     V=pinv(U);
     
@@ -22,7 +24,7 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B)
     W_temp = zeros(num_DMs+1, 1);
 
     % Projection for mode amplitude   
-    if nargin < 3
+    if nargin < 3 || isempty(B)
         VY      = V * Y_seg;      % (M x T')
     else
         VY      = B;
@@ -53,7 +55,7 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B)
     end
 
     % Least-square solution
-    if size(U,2) < size(X,1)
+    if size(U,2) < size(X_seg,1)
         D       = Z_temp \ W_temp;
         
         if nargout > 2
