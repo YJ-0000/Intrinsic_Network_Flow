@@ -50,11 +50,13 @@ function data = HCPread(file_path, is_prev)
     cifti = cifti_read(file_path);
     data = normalize(cifti.cdata'); % Normalize data into (T x V) matrix.
     
-    % Adjust time points based on `is_prev`.
-    if is_prev
-        data = data(1:end-1, :);   % Exclude the last time point.
-    else
-        data = data(2:end, :);     % Exclude the first time point.
+    if isa(is_prev,'logical')
+        % Adjust time points based on `is_prev`.
+        if is_prev
+            data = data(1:end-1, :);   % Exclude the last time point.
+        else
+            data = data(2:end, :);     % Exclude the first time point.
+        end
     end
     
     data = data - mean(data,2);
