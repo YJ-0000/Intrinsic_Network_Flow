@@ -1,4 +1,4 @@
-function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface_file, output_plot_path, min_scale, max_scale, color_map)
+function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface_file, output_plot_path, min_scale, max_scale, color_map, interp)
 % display_cifti_cortex plots BOLD activation 데이터를 HCP cortex surface에 overlay하여 시각화합니다.
 %
 %   display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface_file, output_plot_path, min_scale, max_scale, color_map)
@@ -58,6 +58,10 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
         color_map = flipud(cmap);
     end
 
+    if nargin < 9
+        interp = 'interp';
+    end
+
     %% 3. Cortex 부분 추출
     % 좌/우 모델의 정보 추출 (예: HCP cifti 구조체의 diminfo 이용)
     lh_indices = 1:ciftiData.diminfo{1, 1}.models{1, 1}.count;
@@ -89,7 +93,7 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     % 5-1. 왼쪽 hemisphere, 왼쪽 view
     subplot(2,2,1, 'Parent', fig_handle);
     patch('Vertices', lh_surface.vertices, 'Faces', lh_surface.faces, ...
-          'FaceVertexCData', lh_activation, 'FaceColor', 'interp', 'EdgeColor', 'none');
+          'FaceVertexCData', lh_activation, 'FaceColor', interp, 'EdgeColor', 'none');
     axis equal; axis off;
     view([-90, 0]);  % 왼쪽 view
     camzoom(zoomFactor);
@@ -100,7 +104,7 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     % 5-2. 왼쪽 hemisphere, 오른쪽 view
     subplot(2,2,3, 'Parent', fig_handle);
     patch('Vertices', lh_surface.vertices, 'Faces', lh_surface.faces, ...
-          'FaceVertexCData', lh_activation, 'FaceColor', 'interp', 'EdgeColor', 'none');
+          'FaceVertexCData', lh_activation, 'FaceColor', interp, 'EdgeColor', 'none');
     axis equal; axis off;
     view([90, 0]);   % 오른쪽 view
     camzoom(zoomFactor);
@@ -111,7 +115,7 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     % 5-3. 오른쪽 hemisphere, 왼쪽 view
     subplot(2,2,4, 'Parent', fig_handle);
     patch('Vertices', rh_surface.vertices, 'Faces', rh_surface.faces, ...
-          'FaceVertexCData', rh_activation, 'FaceColor', 'interp', 'EdgeColor', 'none');
+          'FaceVertexCData', rh_activation, 'FaceColor', interp, 'EdgeColor', 'none');
     axis equal; axis off;
     view([-90, 0]);  % 왼쪽 view
     camzoom(zoomFactor);
@@ -122,7 +126,7 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     % 5-4. 오른쪽 hemisphere, 오른쪽 view
     subplot(2,2,2, 'Parent', fig_handle);
     patch('Vertices', rh_surface.vertices, 'Faces', rh_surface.faces, ...
-          'FaceVertexCData', rh_activation, 'FaceColor', 'interp', 'EdgeColor', 'none');
+          'FaceVertexCData', rh_activation, 'FaceColor', interp, 'EdgeColor', 'none');
     axis equal; axis off;
     view([90, 0]);   % 오른쪽 view
     camzoom(zoomFactor);
@@ -142,6 +146,6 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     
     % output_plot_path가 비어있지 않으면 해당 경로에 저장
     if ~isempty(output_plot_path)
-        saveas(fig_handle, output_plot_path);
+        print(fig_handle, output_plot_path, '-djpeg', '-r300');
     end
 end
