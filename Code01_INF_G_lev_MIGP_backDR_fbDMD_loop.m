@@ -1,29 +1,46 @@
 clear; clc;
 
-% gift; close all;
+startup;
 
 current_path = pwd;
+
+%% Get env variables
+slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
 
 %% Run options
 
 method_subject_proj_list = {'DR','TL-cov'}; % DR or TL-cov
 
-target_dim_list = 10:10:100; 
-% target_dim_list = 21:1:29; 
+max_dim = 100;
+if isnan(slurm_id) || slurm_id == 1 || slurm_id == 3 
+    target_dim_list = 10:10:100; 
+elseif slurm_id == 2 || slurm_id == 4
+    target_dim_list = 21:1:29; 
+end
 
-sample_set = 'discovery';
-% sample_set = 'replication';
+if isnan(slurm_id) || slurm_id == 1 || slurm_id == 2
+    sample_set = 'discovery';
+elseif slurm_id == 3 || slurm_id == 4
+    sample_set = 'replication';
+end
 
 fitting_time_window_list =  [1];
 predict_time_window_list = [1,2,4,8];
 
+fprintf("sample_set=%s, max_dim=%d, target_dim_list=[%s], fitting_time_window_list=[%s], predict_time_window_list=[%s]\n", sample_set, max_dim, num2str(target_dim_list), num2str(fitting_time_window_list), num2str(predict_time_window_list));
+
 %%
 
-data_load = load('secure_info\path_info.mat');
-HCP_data_path = data_load.HCP_denoised_path;
-data_load = load('results/split_subjects.mat');
+path_info = load('secure_info/path_info.mat');
+HCP_data_path = path_info.HCP_denoised_path;
+data_load = load('results/split_subjects_105.mat');
 
-data_folders = data_load.data_folders;
+data_folders = dir(HCP_data_path);
+isFolder = [data_folders.isdir];
+names = {data_folders.name};
+mask = isFolder & ~ismember(names, {'.','..'});
+data_folders = data_folders(mask);
+
 sub_ids = data_load.sub_ids;
 if strcmp(sample_set,'discovery')
     sub_ids_set_explore = data_load.sub_ids_set1_explore;
@@ -33,7 +50,7 @@ else
     error('Undefined sample set!!');
 end
 [~,IA,~] = intersect(sub_ids,sub_ids_set_explore);
-data_folders = data_folders(IA);
+data_folders_train = data_folders(IA);
 
 sub_ids = data_load.sub_ids;
 if strcmp(sample_set,'discovery')
@@ -44,8 +61,43 @@ else
     error('Undefined sample set!!');
 end
 [~,IA,~] = intersect(sub_ids,sub_ids_set_test);
-data_folders_test = data_load.data_folders;
-data_folders_test = data_folders_test(IA);
+data_folders_test = data_folders(IA);
+
+%%
+behav_data_path = path_info.behav_data_path;
+gene_data_path = path_info.gene_data_path;
+sub_ids_sets = {sub_ids_set_explore,sub_ids_set_test};
+for ii = 1:2
+    gene_data_table = readtable(gene_data_path,'VariableNamingRule','preserve');
+    behav_data_table = readtable(behav_data_path,'VariableNamingRule','preserve');
+    for nrow = size(gene_data_table,1):-1:1
+        if ~any(sub_ids_sets{ii}==gene_data_table(nrow,'Subject').Variables)
+            gene_data_table(nrow,:) = [];
+        end
+    end
+    for nrow = size(behav_data_table,1):-1:1
+        if ~any(sub_ids_sets{ii}==behav_data_table(nrow,'Subject').Variables)
+            behav_data_table(nrow,:) = [];
+        end
+    end
+    gene_data_table = sortrows(gene_data_table, 'Subject');
+    behav_data_table = sortrows(behav_data_table, 'Subject');
+    
+    ages = gene_data_table.Age_in_Yrs;
+    genders = behav_data_table.Gender;
+    
+    num_subjects = length(ages);
+    num_female = sum(strcmp(genders,'F'));
+    mean_age = mean(ages);
+    std_age = std(ages);
+    if ii == 1
+        fprintf('Total number in discovery sample subjects: %d, Female=%d, mean age=%0.2f, std=%0.2f \n', ...
+            num_subjects,num_female,mean_age,std_age);
+    elseif ii == 2
+        fprintf('Total number of test samplesubjects: %d, Female=%d, mean age=%0.2f, std=%0.2f \n', ...
+            num_subjects,num_female,mean_age,std_age);
+    end
+end
 
 %% Loading one file
 
@@ -55,14 +107,11 @@ comp_est_accum = zeros(num_data_used*2,1);
 
 nfolder = 1;
 
-subname = split(data_folders(nfolder).name,'_');
-REST_num = subname{4};
+subname = split(data_folders_train(nfolder).name,'_');
+REST_num = 'REST1';
 subname = subname{1};
 
-datafile_path_LR = fullfile(data_folders(nfolder).folder, ...
-                    data_folders(nfolder).name, ...
-                    subname,'MNINonLinear','Results', ...
-                    ['rfMRI_',REST_num,'_LR'], ...
+datafile_path_LR = fullfile(data_folders_train(nfolder).folder, subname,...
                     ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
 fprintf(['Loading data ... sub-',subname,' rfMRI LR \n']);
 data = cifti_read(datafile_path_LR);
@@ -70,89 +119,60 @@ data = data.cdata;
 voxel_num = size(data,1);
 temporal_dim = size(data,2);
 
-%% ICA - data concatanation
+%% Group PCA
 
+num_subjects = 50;
 
-for target_dim = target_dim_list
+file_path_list = cell(2*num_subjects,1);
+tcount = 1;
+for nfolder = 1:num_subjects
+    fprintf('>> %d / %d \n',nfolder,num_subjects);
 
-    num_subjects = 50;
+    subname = split(data_folders_train(nfolder).name,'_');
+    subname = subname{1};
+
+    datafile_path_LR = fullfile(HCP_data_path, ...
+                        subname,...
+                        ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
     
+    datafile_path_RL = fullfile(data_folders_train(nfolder).folder, ...
+                        subname,...
+                        ['s6_rfMRI_',REST_num,'_RL_Atlas_hp2000_clean.dtseries.nii']);
+    
+
+    file_path_list{tcount} = datafile_path_LR;
+    tcount = tcount + 1;
+    file_path_list{tcount} = datafile_path_RL;
+    tcount = tcount + 1;
+end
+
+rng('default');
+rng(42);
+data_concat_max_dim = MIGP_forHCP(file_path_list, temporal_dim, max_dim, 'none');
+
+data_concat_max_dim_norm = sqrt(sum(data_concat_max_dim.^2));
+
+data_concat_max_dim_whiten = data_concat_max_dim ./ data_concat_max_dim_norm;
+
+%% ICA - data concatanation
+for target_dim = target_dim_list
+    
+
     dim_reduced_1 = round(1.5*target_dim);
     dim_reduced_2 = target_dim;
-
-    data_concat = zeros(voxel_num,dim_reduced_1*2*num_subjects,'single');
-
-    tcount = 1;
-    for nfolder = 1:num_subjects
-        fprintf('>> %d / %d \n',nfolder,num_subjects);
-
-        subname = split(data_folders(nfolder).name,'_');
-        REST_num = subname{4};
-        subname = subname{1};
-
-        datafile_path_LR = fullfile(data_folders(nfolder).folder, ...
-                            data_folders(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_LR'], ...
-                            ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
-        fprintf(['Loading data ... sub-',subname,' rfMRI LR \n']);
-        data = cifti_read(datafile_path_LR);
-        data = data.cdata;
-
-        fprintf(['Normalizing data ... sub-',subname,' rfMRI LR \n']);
-        data_normalized = normalize(data')';
-    %     data_normalized_centered = data_normalized - mean(data_normalized);
-
-        fprintf(['Reducing data ... sub-',subname,' rfMRI LR \n']);
-        [~,score,lambda_k] = pca(data_normalized,'NumComponents',dim_reduced_1,'Centered',true);
-        data_reduced = score*diag(1 ./ sqrt(lambda_k(1:dim_reduced_1) + eps));
-
-        data_concat(:,tcount:tcount+dim_reduced_1-1) = data_reduced;
-        tcount = tcount + dim_reduced_1;
-        fprintf(['Data saved ... sub-',subname,' rfMRI LR \n']);
-
-        datafile_path_RL = fullfile(data_folders(nfolder).folder, ...
-                            data_folders(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_RL'], ...
-                            ['s6_rfMRI_',REST_num,'_RL_Atlas_hp2000_clean.dtseries.nii']);
-        fprintf(['Loading data ... sub-',subname,' rfMRI RL \n']);
-        data = cifti_read(datafile_path_RL);
-        data = data.cdata;
-
-        fprintf(['Normalizing data ... sub-',subname,' rfMRI LR \n']);
-        data_normalized = normalize(data')';
-    %     data_normalized_centered = data_normalized - mean(data_normalized);
-
-         fprintf(['Reducing data ... sub-',subname,' rfMRI RL \n']);
-        [~,score,lambda_k] = pca(data_normalized,'NumComponents',dim_reduced_1,'Centered',true);
-        data_reduced = score*diag(1 ./ sqrt(lambda_k(1:dim_reduced_1) + eps));
-
-        data_concat(:,tcount:tcount+dim_reduced_1-1) = data_reduced;
-        tcount = tcount + dim_reduced_1;
-        fprintf(['Data saved ... sub-',subname,' rfMRI RL \n']);
-    end
-
-    %% ICA - Group-level reduction
-    [G_group,score,lambda_k] = pca(data_concat,'NumComponents',dim_reduced_2,'Centered',true);
-    data_concat_reduced = score*diag(1 ./ sqrt(lambda_k(1:dim_reduced_2) + eps));
-    G_group_whitening = G_group * diag(1 ./ sqrt(lambda_k(1:dim_reduced_2) + eps));
-    lambda_k_group = lambda_k;
+    
+    data_concat_reduced = data_concat_max_dim_whiten(:,1:target_dim);
+    
+    
     %% ICA - Group-level ICA
     data_concat_reduced_removeNAN = data_concat_reduced;
     mask_vec = sum(isnan(data_concat_reduced),2)==0;
     data_concat_reduced_removeNAN(sum(isnan(data_concat_reduced),2)>0,:) = [];
     [icaAlgo, W, W_inv, source_maps] = icatb_icaAlgorithm('infomax', data_concat_reduced_removeNAN');
-
-    %% save source maps
-    labels = cifti_read('atlas/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR.dlabel.nii');
+    
     source_maps_oridim = zeros(size(data_concat_reduced))';
     source_maps_oridim(:,mask_vec) = source_maps;
-    mkdir('source_maps');
-    for k = 1:target_dim
-        source_map_cifti = cifti_struct_create_from_template(labels,source_maps_oridim(k,:)', 'dscalar');
-        cifti_write(source_map_cifti, ['source_maps/source_',num2str(k),'.dscalar.nii']);
-    end
+    
 
     %% Back reconstruction
 
@@ -166,14 +186,11 @@ for target_dim = target_dim_list
     for nfolder = 1:num_subjects
         fprintf('>> %d / %d \n',nfolder,num_subjects);
 
-        subname = split(data_folders(nfolder).name,'_');
-        REST_num = subname{4};
+        subname = split(data_folders_train(nfolder).name,'_');
         subname = subname{1};
 
-        datafile_path_LR = fullfile(data_folders(nfolder).folder, ...
-                            data_folders(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_LR'], ...
+        datafile_path_LR = fullfile(data_folders_train(nfolder).folder, ...
+                            subname, ...
                             ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
         fprintf(['Loading data ... sub-',subname,' rfMRI LR \n']);
         data = cifti_read(datafile_path_LR);
@@ -190,10 +207,8 @@ for target_dim = target_dim_list
         ncount = ncount + dim_reduced_1;
         fprintf(['Time course extracted ... sub-',subname,' rfMRI LR \n']);
 
-        datafile_path_RL = fullfile(data_folders(nfolder).folder, ...
-                            data_folders(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_RL'], ...
+        datafile_path_RL = fullfile(data_folders_train(nfolder).folder, ...
+                            subname, ...
                             ['s6_rfMRI_',REST_num,'_RL_Atlas_hp2000_clean.dtseries.nii']);
         fprintf(['Loading data ... sub-',subname,' rfMRI RL \n']);
         data = cifti_read(datafile_path_RL);
@@ -239,20 +254,19 @@ for target_dim = target_dim_list
     
     Z = A2/num_subjects;
 
+    Phi_orig_DL = source_maps' * Phi_all;
+
     %% reconstruct exact mode
-    Phi_orig = zeros(voxel_num,size(Phi_all,2));
+    Phi_orig_exact = zeros(voxel_num,size(Phi_all,2));
     tcount = 1;
     for nfolder = 1:num_subjects
         fprintf('>> %d / %d \n',nfolder,num_subjects);
 
-        subname = split(data_folders(nfolder).name,'_');
-        REST_num = subname{4};
+        subname = split(data_folders_train(nfolder).name,'_');
         subname = subname{1};
 
-        datafile_path_LR = fullfile(data_folders(nfolder).folder, ...
-                            data_folders(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_LR'], ...
+        datafile_path_LR = fullfile(data_folders_train(nfolder).folder, ...
+                            subname, ...
                             ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
         fprintf(['Loading data ... sub-',subname,' rfMRI LR \n']);
         data = cifti_read(datafile_path_LR);
@@ -263,12 +277,10 @@ for target_dim = target_dim_list
 
         temp_prod = data_normalized(:,2:end) * temp_v(tcount:tcount+(temporal_dim-1)-1,:);
         tcount = tcount + (temporal_dim-1);
-        Phi_orig = Phi_orig + temp_prod;
+        Phi_orig_exact = Phi_orig_exact + temp_prod;
 
-        datafile_path_RL = fullfile(data_folders(nfolder).folder, ...
-                            data_folders(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_RL'], ...
+        datafile_path_RL = fullfile(data_folders_train(nfolder).folder, ...
+                            subname, ...
                             ['s6_rfMRI_',REST_num,'_RL_Atlas_hp2000_clean.dtseries.nii']);
         fprintf(['Loading data ... sub-',subname,' rfMRI RL \n']);
         data = cifti_read(datafile_path_RL);
@@ -279,7 +291,7 @@ for target_dim = target_dim_list
 
         temp_prod = data_normalized(:,2:end) * temp_v(tcount:tcount+(temporal_dim-1)-1,:);
         tcount = tcount + (temporal_dim-1);
-        Phi_orig = Phi_orig + temp_prod;
+        Phi_orig_exact = Phi_orig_exact + temp_prod;
 
         fprintf(['Time course extracted ... sub-',subname,' rfMRI RL \n']);
     end
@@ -304,13 +316,10 @@ for target_dim = target_dim_list
             fprintf('>> %d / %d \n',nfolder,num_subjects);
 
             subname = split(data_folders_test(nfolder).name,'_');
-            REST_num = subname{4};
             subname = subname{1};
 
             datafile_path_LR = fullfile(data_folders_test(nfolder).folder, ...
-                                data_folders_test(nfolder).name, ...
-                                subname,'MNINonLinear','Results', ...
-                                ['rfMRI_',REST_num,'_LR'], ...
+                                subname, ...
                                 ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
             fprintf(['Loading data ... sub-',subname,' rfMRI LR \n']);
             data = cifti_read(datafile_path_LR);
@@ -342,9 +351,7 @@ for target_dim = target_dim_list
             fprintf(['Prediction complete ... sub-',subname,' rfMRI LR \n']);
 
             datafile_path_RL = fullfile(data_folders_test(nfolder).folder, ...
-                                data_folders_test(nfolder).name, ...
-                                subname,'MNINonLinear','Results', ...
-                                ['rfMRI_',REST_num,'_RL'], ...
+                                subname, ...
                                 ['s6_rfMRI_',REST_num,'_RL_Atlas_hp2000_clean.dtseries.nii']);
             fprintf(['Loading data ... sub-',subname,' rfMRI RL \n']);
             data = cifti_read(datafile_path_RL);
@@ -388,14 +395,14 @@ for target_dim = target_dim_list
         end
 
         %% display
-        figure;
-        bar( [...
-        squeeze(mean(R2_DM_array_list(:,:,1,:),[1,2])), ...
-        squeeze(mean(R2_lin_array_list(:,:,1,:),[1,2])),...
-        squeeze(mean(R2_null_array_list(:,:,1,:),[1,2])) ...
-        ]');
-        legend({'predict 1s ahead','predict 2s ahead','predict 4s ahead','predict 8s ahead'});
-        clear R2_DM_array_list R2_DM_array_cortex_list R2_DM_array_subcortical_list
+        % figure;
+        % bar( [...
+        % squeeze(mean(R2_DM_array_list(:,:,1,:),[1,2])), ...
+        % squeeze(mean(R2_lin_array_list(:,:,1,:),[1,2])),...
+        % squeeze(mean(R2_null_array_list(:,:,1,:),[1,2])) ...
+        % ]');
+        % legend({'predict 1s ahead','predict 2s ahead','predict 4s ahead','predict 8s ahead'});
+        % clear R2_DM_array_list R2_DM_array_cortex_list R2_DM_array_subcortical_list
     end
     %% 
     % Get the current date and time formatted as YYYYMMDD_HHMMSS
@@ -403,11 +410,11 @@ for target_dim = target_dim_list
 
     % Create a filename using the datetime string
     if strcmp(sample_set,'discovery')
-        filename = ['results/loop_gica_', num2str(target_dim,'%03d'), '_dmd_results_normalized_' dtStr '.mat'];
+        filename = ['results/disc_INF_G_lev_', num2str(target_dim,'%03d'), '_MIGP_results_' dtStr '.mat'];
     elseif strcmp(sample_set, 'replication')
-        filename = ['results/repl_gica_', num2str(target_dim,'%03d'), '_dmd_results_normalized_' dtStr '.mat'];
+        filename = ['results/repl_INF_G_lev_', num2str(target_dim,'%03d'), '_MIGP_results_' dtStr '.mat'];
     else
         error('Undefined sample set!!');
     end
-    save(filename, 'lambda', 'Phi_all', 'Phi_orig', 'D', 'W', 'A', 'Z', 'source_maps', 'G_group','lambda_k_group','inv_source','R2*list','*time_window_list');
+    save(filename, 'lambda', 'Phi_all', 'Phi_orig_DL', 'Phi_orig_exact', 'D', 'W', 'A', 'Z', 'source_maps', 'inv_source','R2*list','*time_window_list');
 end
