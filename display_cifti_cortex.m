@@ -112,6 +112,24 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     lighting gouraud;
     material dull;
     
+    %%% medial wall
+    target_idx = true(size(lh_activation));
+    target_idx(lh_vertlist) = false;
+    target_idx = find(target_idx);
+    offset = 0.1;
+    vertex_medial_wall = lh_surface.vertices + [offset,0,0];
+    face_mask = any(ismember(lh_surface.faces, target_idx), 2);
+    face_idx = find(face_mask);
+    faces_medial_wall = lh_surface.faces(face_idx, :);
+
+    hold on;
+    patch('Vertices', vertex_medial_wall, ...
+      'Faces', faces_medial_wall, ...
+      'FaceColor', [0.5 0.5 0.5], ...   
+      'EdgeColor', 'none');
+    hold off;
+    material dull;
+    
     % 5-3. 오른쪽 hemisphere, 왼쪽 view
     subplot(2,2,4, 'Parent', fig_handle);
     patch('Vertices', rh_surface.vertices, 'Faces', rh_surface.faces, ...
@@ -121,6 +139,23 @@ function display_cifti_cortex(fig_handle, ciftiData, lh_surface_file, rh_surface
     camzoom(zoomFactor);
     camlight('headlight');
     lighting gouraud;
+    material dull;
+
+    %%% medial wall
+    target_idx = true(size(rh_activation));
+    target_idx(rh_vertlist) = false;
+    target_idx = find(target_idx);
+    vertex_medial_wall = rh_surface.vertices + [-offset,0,0];
+    face_mask = any(ismember(rh_surface.faces, target_idx), 2);
+    face_idx = find(face_mask);
+    faces_medial_wall = rh_surface.faces(face_idx, :);
+
+    hold on;
+    patch('Vertices', vertex_medial_wall, ...
+      'Faces', faces_medial_wall, ...
+      'FaceColor', [0.5 0.5 0.5], ...   
+      'EdgeColor', 'none');
+    hold off;
     material dull;
     
     % 5-4. 오른쪽 hemisphere, 오른쪽 view

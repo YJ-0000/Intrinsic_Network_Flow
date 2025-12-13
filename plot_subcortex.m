@@ -139,11 +139,17 @@ function plot_subcortex(fig_handle,cifti_data, output_plot_path, color_map, min_
         if strcmp(structure_label,'cerebellum')
             arrow_origin = arrow_origin - [0,20,10];
         end
+        if strcmp(structure_label,'hippocampus')
+            arrow_origin = arrow_origin - [0,0,10];
+        end
         posterior_dx = -2;
         posterior_dy = -3;
         right_dz = -2;
     else
         arrow_origin = [0,max(ylim),min(zlim)-15];
+        if strcmp(structure_label,'hippocampus')
+            arrow_origin = arrow_origin - [0,0,10];
+        end
         posterior_dx = -2;
         posterior_dy = 2;
         right_dz = -4;
