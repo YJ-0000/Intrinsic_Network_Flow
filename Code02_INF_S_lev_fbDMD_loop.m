@@ -1,26 +1,42 @@
 clear; clc;
 
-% gift; close all;
+startup;
 
 current_path = pwd;
 
+%% Get env variables
+slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
+
 %% Run options
 
-target_dim_list = 10:10:100; 
+max_dim = 100;
+if isnan(slurm_id) || slurm_id == 1 || slurm_id == 3 
+    target_dim_list = 10:10:100; 
+elseif slurm_id == 2 || slurm_id == 4
+    target_dim_list = 21:1:29; 
+end
 
-sample_set = 'discovery';
-% sample_set = 'replication';
+if isnan(slurm_id) || slurm_id == 1 || slurm_id == 2
+    sample_set = 'discovery';
+elseif slurm_id == 3 || slurm_id == 4
+    sample_set = 'replication';
+end
 
 fitting_time_window_list =  [1];
 predict_time_window_list = [1,2,4,8];
 
 %%
 
-data_load = load('secure_info\path_info.mat');
+data_load = load('secure_info/path_info.mat');
 HCP_data_path = data_load.HCP_denoised_path;
-data_load = load('results/split_subjects.mat');
+data_load = load('results/split_subjects_105.mat');
 
-data_folders = data_load.data_folders;
+data_folders = dir(HCP_data_path);
+isFolder = [data_folders.isdir];
+names = {data_folders.name};
+mask = isFolder & ~ismember(names, {'.','..'});
+data_folders = data_folders(mask);
+
 sub_ids = data_load.sub_ids;
 if strcmp(sample_set,'discovery')
     sub_ids_set_explore = data_load.sub_ids_set1_explore;
@@ -30,7 +46,7 @@ else
     error('Undefined sample set!!');
 end
 [~,IA,~] = intersect(sub_ids,sub_ids_set_explore);
-data_folders = data_folders(IA);
+data_folders_train = data_folders(IA);
 
 sub_ids = data_load.sub_ids;
 if strcmp(sample_set,'discovery')
@@ -41,12 +57,13 @@ else
     error('Undefined sample set!!');
 end
 [~,IA,~] = intersect(sub_ids,sub_ids_set_test);
-data_folders_test = data_load.data_folders;
-data_folders_test = data_folders_test(IA);
+data_folders_test = data_folders(IA);
 
 %%
 
 num_subjects = length(data_folders_test);
+
+REST_num = 'REST1';
 
 for target_dim = target_dim_list
 
@@ -68,13 +85,11 @@ for target_dim = target_dim_list
         tic
 
         subname = split(data_folders_test(nfolder).name,'_');
-        REST_num = subname{4};
+        % REST_num = subname{4};
         subname = subname{1};
 
         datafile_path_LR = fullfile(data_folders_test(nfolder).folder, ...
-                            data_folders_test(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_LR'], ...
+                            subname, ...
                             ['s6_rfMRI_',REST_num,'_LR_Atlas_hp2000_clean.dtseries.nii']);
         fprintf(['Loading data ... sub-',subname,' rfMRI LR \n']);
         data = cifti_read(datafile_path_LR);
@@ -117,9 +132,7 @@ for target_dim = target_dim_list
         fprintf(['Prediction complete ... sub-',subname,' rfMRI LR \n']);
 
         datafile_path_RL = fullfile(data_folders_test(nfolder).folder, ...
-                            data_folders_test(nfolder).name, ...
-                            subname,'MNINonLinear','Results', ...
-                            ['rfMRI_',REST_num,'_RL'], ...
+                            subname, ...
                             ['s6_rfMRI_',REST_num,'_RL_Atlas_hp2000_clean.dtseries.nii']);
         fprintf(['Loading data ... sub-',subname,' rfMRI RL \n']);
         data = cifti_read(datafile_path_RL);
@@ -178,9 +191,9 @@ for target_dim = target_dim_list
 
     % Create a filename using the datetime string
     if strcmp(sample_set,'discovery')
-        filename = ['results/subject_wise_ica',num2str(target_dim,'%03d'),'_dmd_results_normalized_' dtStr '.mat'];
+        filename = ['results/disc_subject_wise_ica',num2str(target_dim,'%03d'),'_dmd_results_' dtStr '.mat'];
     elseif strcmp(sample_set, 'replication')
-        filename = ['results/repl_subject_wise_ica', num2str(target_dim,'%03d'), '_dmd_results_normalized_' dtStr '.mat'];
+        filename = ['results/repl_subject_wise_ica', num2str(target_dim,'%03d'), '_dmd_results_' dtStr '.mat'];
     else
         error('Undefined sample set!!');
     end

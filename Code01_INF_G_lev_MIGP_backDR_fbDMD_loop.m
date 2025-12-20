@@ -91,7 +91,7 @@ for ii = 1:2
     mean_age = mean(ages);
     std_age = std(ages);
     if ii == 1
-        fprintf('Total number in discovery sample subjects: %d, Female=%d, mean age=%0.2f, std=%0.2f \n', ...
+        fprintf('Total number in training sample subjects: %d, Female=%d, mean age=%0.2f, std=%0.2f \n', ...
             num_subjects,num_female,mean_age,std_age);
     elseif ii == 2
         fprintf('Total number of test samplesubjects: %d, Female=%d, mean age=%0.2f, std=%0.2f \n', ...
@@ -120,8 +120,6 @@ voxel_num = size(data,1);
 temporal_dim = size(data,2);
 
 %% Group PCA
-
-num_subjects = 50;
 
 file_path_list = cell(2*num_subjects,1);
 tcount = 1;
