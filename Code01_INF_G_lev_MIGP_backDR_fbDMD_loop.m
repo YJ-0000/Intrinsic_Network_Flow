@@ -9,7 +9,7 @@ slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
 
 %% Run options
 
-method_subject_proj_list = {'DR','TL-cov'}; % DR or TL-cov
+method_subject_proj_list = {'DR','TL-cov','Group'}; % DR or TL-cov or Group
 
 max_dim = 100;
 if isnan(slurm_id) || slurm_id == 1 || slurm_id == 3 
@@ -329,12 +329,15 @@ for target_dim = target_dim_list
             time_course_sub = (inv_source * data_normalized(:,1:720));        
             if strcmp(method_subject_proj, 'DR')
                 temp_v = pinv(time_course_sub(:,2:end)) * Phi_all;
+                Phi_orig_sub = data_normalized(:,2:720) * temp_v;
             elseif strcmp(method_subject_proj, 'TL-cov')
                 temp_v = (time_course_sub(:,1:end-1)' / (Z)) * Phi_all;
+                Phi_orig_sub = data_normalized(:,2:720) * temp_v;
+            elseif strcmp(method_subject_proj, 'Group')
+                Phi_orig_sub = Phi_orig_DL;
             else
                 error('Not defined projection methods!!');
             end
-            Phi_orig_sub = data_normalized(:,2:720) * temp_v;
             [R2_DM_array,R2_DM_array_cortex,R2_DM_array_subcortical, R2_null_array,R2_null_array_cortex,R2_null_array_subcortical] ...
             =benchmark_using_DMs(Phi_orig_sub,data_normalized,1,1,0.6,fitting_time_window_list,predict_time_window_list,false);
 
@@ -361,12 +364,15 @@ for target_dim = target_dim_list
             time_course_sub = (inv_source * data_normalized(:,1:720));        
             if strcmp(method_subject_proj, 'DR')
                 temp_v = pinv(time_course_sub(:,2:end)) * Phi_all;
+                Phi_orig_sub = data_normalized(:,2:720) * temp_v;
             elseif strcmp(method_subject_proj, 'TL-cov')
                 temp_v = (time_course_sub(:,1:end-1)' / (Z)) * Phi_all;
+                Phi_orig_sub = data_normalized(:,2:720) * temp_v;
+            elseif strcmp(method_subject_proj, 'Group')
+                Phi_orig_sub = Phi_orig_DL;
             else
                 error('Not defined projection methods!!');
             end
-            Phi_orig_sub = data_normalized(:,2:720) * temp_v;
             [R2_DM_array,R2_DM_array_cortex,R2_DM_array_subcortical, R2_null_array,R2_null_array_cortex,R2_null_array_subcortical] ...
             =benchmark_using_DMs(Phi_orig_sub,data_normalized,1,1,0.6,fitting_time_window_list,predict_time_window_list,false);
 
@@ -382,25 +388,19 @@ for target_dim = target_dim_list
             toc
         end
         
-        if i_proj == 1
+        if strcmp(method_subject_proj, 'DR')
             R2_DM_DR_array_list = R2_DM_array_list;
             R2_DM_DR_array_cortex_list = R2_DM_array_cortex_list;
             R2_DM_DR_array_subcortical_list = R2_DM_array_subcortical_list;
-        elseif i_proj == 2
+        elseif strcmp(method_subject_proj, 'TL-cov')
             R2_DM_TL_cov_array_list = R2_DM_array_list;
             R2_DM_TL_cov_array_cortex_list = R2_DM_array_cortex_list;
             R2_DM_TL_cov_array_subcortical_list = R2_DM_array_subcortical_list;
+        elseif strcmp(method_subject_proj, 'Group')
+            R2_DM_Group_array_list = R2_DM_array_list;
+            R2_DM_Group_array_cortex_list = R2_DM_array_cortex_list;
+            R2_DM_Group_array_subcortical_list = R2_DM_array_subcortical_list;
         end
-
-        %% display
-        % figure;
-        % bar( [...
-        % squeeze(mean(R2_DM_array_list(:,:,1,:),[1,2])), ...
-        % squeeze(mean(R2_lin_array_list(:,:,1,:),[1,2])),...
-        % squeeze(mean(R2_null_array_list(:,:,1,:),[1,2])) ...
-        % ]');
-        % legend({'predict 1s ahead','predict 2s ahead','predict 4s ahead','predict 8s ahead'});
-        % clear R2_DM_array_list R2_DM_array_cortex_list R2_DM_array_subcortical_list
     end
     %% 
     % Get the current date and time formatted as YYYYMMDD_HHMMSS
