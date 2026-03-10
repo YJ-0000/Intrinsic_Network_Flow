@@ -43,6 +43,8 @@ assert(~isempty(which('suit_mni2suit')),    'SUIT: suit_mni2suit not found.');
 assert(~isempty(which('suit_map2surf')),   'SUIT: suit_map2surf not found.');
 assert(~isempty(which('spm_vol')),         'SPM12 not found.');
 
+if isempty(opt.Colormap); opt.Colormap = RB_color_map; end
+
 try
     [vol3d, sform, roiMask] = cifti_struct_dense_extract_volume_structure_data(cifti, opt.Structure);
 catch

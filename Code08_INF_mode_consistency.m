@@ -31,8 +31,8 @@ results_group_rest1 = load(fullfile(g_ica_result_files(end).folder,g_ica_result_
 g_ica_result_files = dir(['results/INF_G_lev_REST2_ALL_',num2str(target_dim,'%03d'),'_MIGP_results_*.mat']);
 results_group_rest2 = load(fullfile(g_ica_result_files(end).folder,g_ica_result_files(end).name));
 
-Phi_orig_group_rest1 = results_group_rest1.Phi_orig_DL(target_idx,:);
-Phi_orig_group_rest2 = results_group_rest2.Phi_orig_DL(target_idx,:);
+Phi_orig_group_rest1 = results_group_rest1.Phi_orig_DR(target_idx,:);
+Phi_orig_group_rest2 = results_group_rest2.Phi_orig_DR(target_idx,:);
 lambda_group_rest1 = results_group_rest1.lambda;
 lambda_group_rest2 = results_group_rest2.lambda;
 

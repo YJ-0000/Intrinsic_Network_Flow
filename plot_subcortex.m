@@ -95,6 +95,11 @@ function plot_subcortex(fig_handle,cifti_data, output_plot_path, color_map, min_
         vox_position = [vox_position, MNI_coords_temp(1:3,:)];
     end
     
+    check_min_max_provided = true;
+    if isempty(max_scale); max_scale = max(cifti_data_select); check_min_max_provided = false; end
+    if isempty(min_scale); min_scale = min(cifti_data_select); check_min_max_provided = false; end
+    fprintf('Scale is not provided.. Setting it from data -- Max: %.4f, Min: %.4f \n',max_scale,min_scale);
+    
     color = zeros(size(vox_position,2), 3);
     for n_vox = 1:size(vox_position,2)
         if cifti_data_select(n_vox) <= max_scale && cifti_data_select(n_vox) > min_scale

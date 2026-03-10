@@ -2,13 +2,19 @@ clear;clc;
 
 target_dim = 27;
 TRtarget = 0.72;
-g_ica_result_files = dir(['results/loop_gica_',num2str(target_dim,'%03d'),'_dmd_results_normalized_*.mat']);
+g_ica_result_files = dir('results/INF_G_lev_REST1_ALL_027_MIGP_results_*.mat');
+
 load_results = load(fullfile(g_ica_result_files(end).folder,g_ica_result_files(end).name));
 lambda = load_results.lambda;
 source_maps = load_results.source_maps;
 Phi_all = load_results.Phi_all;
-Phi_orig = load_results.Phi_orig;
-
+if isfield(load_results, 'Phi_orig')
+    Phi_orig = -load_results.Phi_orig;
+elseif isfield(load_results, 'Phi_orig_DR')
+    Phi_orig = -load_results.Phi_orig_DR;
+else
+    Phi_orig = -load_results.Phi_orig_DL;
+end
 abs_DM = abs(lambda);
 period_DM = 2*pi*TRtarget ./ angle(lambda);
 
@@ -21,8 +27,8 @@ lambda_complex = lambda(period_DM < thres_period);
 
 labels = cifti_read('atlas/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR.dlabel.nii');
 
-mkdir('G_ICA_DMD_video_HCP_REST_fbDMD_REST1_exact_mode_whole');
-save_dir = [pwd filesep 'G_ICA_DMD_video_HCP_REST_fbDMD_REST1_exact_mode_whole'];
+mkdir('G_ICA_DMD_video_HCP_REST_fbDMD_REST1_ALL_DR_mode_whole');
+save_dir = [pwd filesep 'G_ICA_DMD_video_HCP_REST_fbDMD_REST1_ALL_DR_mode_whole'];
 
 lh_surface_file = 'atlas/Q1-Q6_R440.L.inflated.32k_fs_LR.surf.gii';
 rh_surface_file = 'atlas/Q1-Q6_R440.R.inflated.32k_fs_LR.surf.gii';
@@ -32,9 +38,10 @@ is_cortex_plot = true;
 structure_label_list = {'cortex','hippocampus','amygdala','thalamus','striatum','brainstem','cerebellum_flat'};
 structure_names_display = {'Cortex','Hippocampus','Amygdala','Thalamus','Striatum','Brainstem','Cerebellum'};
 
-idx_sort = [1,2,3,4,5,6,7,11,8,9,10,12,13,14];
+% idx_sort = [1,2,3,4,5,6,7,11,8,9,10,12,13,14];
+idx_sort = 1:13;
 
-for pair_num = 13:size(Phi_orig_complex,2)/2
+for pair_num = 13%4:size(Phi_orig_complex,2)/2
     
     save_dir_dm = fullfile(save_dir,['DM_pair_',num2str(pair_num,'%02d')]);
     mkdir(save_dir_dm);
@@ -53,20 +60,35 @@ for pair_num = 13:size(Phi_orig_complex,2)/2
     lambda_conjugate1 = lambda_complex(DM_conjugate1_num);
     lambda_conjugate2 = lambda_complex(DM_conjugate2_num);
     
+    frame_length = ceil(TRtarget * 2*pi / abs(angle(lambda_conjugate1))  / frame_dt);
     
+    % if pair_num == 1
+    %     ref_t = 0;
+    % elseif pair_num == 2
+    %     ref_t = 0;
+    % elseif pair_num == 3
+    %     ref_t = 0;
+    % elseif pair_num == 4
+    %     ref_t = 0;
+    % else
+    %     ref_t = 0;
+    % end
+
+    ref_t = 0;
+
     if pair_num == 1
-        ref_t = 0;
+        phase_sign = -1;
     elseif pair_num == 2
-        ref_t = -3;
-    elseif pair_num == 3
-        ref_t = -1.5;
-    elseif pair_num == 4
-        ref_t = -6;
-    else
-        ref_t = 0;
+        phase_sign = -1;
+    elseif  pair_num == 3
+        phase_sign = 1;
+    elseif  pair_num == 4
+        phase_sign = exp(1i * pi / 4);
+    else 
+        phase_sign  = 1;
     end
     
-    figure;
+    figure('Position', [0, 0, 554, 416]);
     fig = gcf;
     
     min_scale = -2*max(abs(Phi_orig_complex(:,DM_conjugate1_num)));
@@ -74,16 +96,14 @@ for pair_num = 13:size(Phi_orig_complex,2)/2
     
     fprintf('Scale -- Max: %0.4f, Min: %0.4f \n',max_scale,min_scale);
     
-    frame_length = ceil(TRtarget * 2*pi / abs(angle(lambda_conjugate1))  / frame_dt);
-    
     if is_cortex_plot
         for frame = 1:frame_length
 
             current_time = frame_dt * (frame-1);
 
             source_snapshot = real( ...
-                (lambda_conjugate1^((frame*frame_dt+ref_t)/TRtarget)) * Phi_orig_complex(:,DM_conjugate1_num) + ...
-                (lambda_conjugate2^((frame*frame_dt+ref_t)/TRtarget)) * Phi_orig_complex(:,DM_conjugate2_num) ...
+                (lambda_conjugate1^((frame*frame_dt+ref_t)/TRtarget)) * phase_sign * Phi_orig_complex(:,DM_conjugate1_num) + ...
+                (lambda_conjugate2^((frame*frame_dt+ref_t)/TRtarget)) * phase_sign * Phi_orig_complex(:,DM_conjugate2_num) ...
             );
 
             activation_snapshot = source_snapshot;
@@ -97,7 +117,7 @@ for pair_num = 13:size(Phi_orig_complex,2)/2
             annotation_handle = annotation('textbox', [0.01, 0.94, 0.2, 0.05], ...
                 'String', sprintf('t = %.1f s', current_time), ...
                 'EdgeColor', 'none', ...
-                'FontSize', 14, ...
+                'FontSize', 12, ...
                 'FontWeight', 'bold', ...
                 'Color', 'k', ...
                 'HorizontalAlignment', 'left', ...
@@ -118,8 +138,8 @@ for pair_num = 13:size(Phi_orig_complex,2)/2
             current_time = frame_dt * (frame-1);
 
             source_snapshot = real( ...
-                (lambda_conjugate1^((frame*frame_dt+ref_t)/TRtarget)) * Phi_orig_complex(:,DM_conjugate1_num) + ...
-                (lambda_conjugate2^((frame*frame_dt+ref_t)/TRtarget)) * Phi_orig_complex(:,DM_conjugate2_num) ...
+                (lambda_conjugate1^((frame*frame_dt+ref_t)/TRtarget)) * phase_sign * Phi_orig_complex(:,DM_conjugate1_num) + ...
+                (lambda_conjugate2^((frame*frame_dt+ref_t)/TRtarget)) * phase_sign * Phi_orig_complex(:,DM_conjugate2_num) ...
             );
 
             activation_snapshot = source_snapshot;
@@ -158,7 +178,7 @@ for pair_num = 13:size(Phi_orig_complex,2)/2
         0.5, 0.85;
     ];
     
-    v = VideoWriter([save_dir, filesep, 'DM', num2str(pair_num,'%02d')], 'MPEG-4');
+    v = VideoWriter([save_dir, filesep, 'DM', num2str(pair_num,'%02d')], 'Motion JPEG AVI');
     v.FrameRate = 10; % Set frame rate
     open(v);
 %%
@@ -188,15 +208,15 @@ for pair_num = 13:size(Phi_orig_complex,2)/2
         end
         
         %%% colorbar
-        img = imread(fullfile(save_dir,'colorbar.jpg'));
+        img = imread(fullfile(save_dir,'colorbar.png'));
 
         % Create axes with specified position
         ax = axes('InnerPosition', [0.56, 0.4, 0.25, 0.25]);
         imshow(img, 'Parent', ax);
         axis(ax, 'off');
-        text(2.8, 0.9, num2str(max_scale,'%.1f'), 'Units', 'normalized', 'HorizontalAlignment', 'right', ...
+        text(4.5, 0.9, num2str(max_scale,'%.1f'), 'Units', 'normalized', 'HorizontalAlignment', 'right', ...
                  'VerticalAlignment', 'bottom', 'FontSize', 10, 'Parent', ax);
-        text(2.8, 0.1, num2str(min_scale,'%.1f'), 'Units', 'normalized', 'HorizontalAlignment', 'right', ...
+        text(4.5, 0.1, num2str(min_scale,'%.1f'), 'Units', 'normalized', 'HorizontalAlignment', 'right', ...
                  'VerticalAlignment', 'top', 'FontSize', 10, 'Parent', ax);
         
         
@@ -310,7 +330,7 @@ for pair_num = 1:size(Phi_orig_real,2)
         end
         
         %%% colorbar
-        img = imread(fullfile(save_dir,'colorbar.jpg'));
+        img = imread(fullfile(save_dir,'colorbar.png'));
 
         % Create axes with specified position
         ax = axes('InnerPosition', [0.56, 0.4, 0.25, 0.25]);

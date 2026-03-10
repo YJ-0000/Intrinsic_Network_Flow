@@ -108,7 +108,7 @@ for target_dim = target_dim_list
     %% DM in original space
     temp_v = pinv(Y) * Phi_all;
     Z = A2 / num_subjects;
-    Phi_orig_DL = source_maps' * Phi_all;
+    Phi_orig_DR = source_maps' * Phi_all;
 
     %% Reconstruct exact mode
     Phi_orig_exact = zeros(voxel_num, size(Phi_all, 2));
@@ -131,6 +131,6 @@ for target_dim = target_dim_list
     dtStr = datestr(now, 'yyyymmdd_HHMMSS');
     filename = sprintf('results/INF_G_lev_%s_ALL_%03d_MIGP_results_%s.mat', REST_num, target_dim, dtStr);
 
-    save(filename, 'lambda', 'Phi_all', 'Phi_orig_DL', 'Phi_orig_exact', 'D', 'W', 'A', 'Z', ...
+    save(filename, 'lambda', 'Phi_all', 'Phi_orig_DR', 'Phi_orig_exact', 'D', 'W', 'A', 'Z', ...
         'source_maps', 'inv_source', 'latent', 'data_concat_max_dim');
 end

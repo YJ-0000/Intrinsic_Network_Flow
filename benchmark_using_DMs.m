@@ -1,6 +1,6 @@
 function [R2_DM_array,R2_DM_array_cortex,R2_DM_array_subcortical, R2_null_array,R2_null_array_cortex,R2_null_array_subcortical, R2_lin_array, fitting_time_window_list, predict_time_window_list] = benchmark_using_DMs(...
     DM_vectors, data, source_maps, inv_source_maps, training_ratio, ...
-    fitting_time_window_list, predict_time_window_list, is_source_fit, cortex_dim)
+    fitting_time_window_list, predict_time_window_list, D_group, is_source_fit, cortex_dim)
 % BENCHMARK_USING_DMS Performance benchmarking using Dynamic Mode Decomposition (DMD)
 %
 %   [R2_DM_array, R2_null_array, R2_lin_array, FIT_LIST, PRED_LIST] = ...
@@ -36,9 +36,12 @@ if nargin < 7
     predict_time_window_list = [1, 2, 4, 8];
 end
 if nargin < 8
-    is_source_fit = false;
+    D_group = [];
 end
 if nargin < 9
+    is_source_fit = false;
+end
+if nargin < 10
     cortex_dim = min(59412,size(data,1)-1);
 end
 
@@ -51,15 +54,26 @@ test_data     = data(:, split_idx+1:end);
 
 % Compute DMD eigenvalues (D) from training data
 if ~is_source_fit
-    [D, ~] = computeDMcoefficients(training_data, DM_vectors);
+    if isempty(D_group)
+        [D, ~] = computeDMcoefficients(training_data, DM_vectors);
+    else
+        B_seg_array = pinv(DM_vectors) * training_data(:,1:end-1);
+        x_obs_pred = real(DM_vectors * (B_seg_array .* D_group));
+        resid_training = training_data(:,2:end) - x_obs_pred;
+        c0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 1:end-1), 1));
+        b0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 2:end), 1));
+        D = [real(b0 / c0); D_group];
+    end
+    
 else
     % Compute linear mapping A_linear in latent space
-    source_training = inv_source_maps * training_data;
-    [D, ~] = computeDMcoefficients(source_training, DM_vectors);
-    resid_training = training_data - source_maps * source_training;
-    c0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 1:end-1), 1));
-    b0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 2:end), 1));
-    D(1) = real(b0 / c0);
+        source_training = inv_source_maps * training_data;
+        [D, ~] = computeDMcoefficients(source_training, DM_vectors);
+        resid_training = training_data - source_maps * source_training;
+        c0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 1:end-1), 1));
+        b0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 2:end), 1));
+        D(1) = real(b0 / c0);
+    
 end
 % Compute null model coefficient a_null
 c0 = sum(dot(training_data(:, 1:end-1), training_data(:, 1:end-1), 1));
