@@ -27,8 +27,8 @@ lambda_complex = lambda(period_DM < thres_period);
 
 labels = cifti_read('atlas/CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR.dlabel.nii');
 
-mkdir('G_ICA_DMD_video_HCP_REST_fbDMD_REST1_ALL_DR_mode_whole');
-save_dir = [pwd filesep 'G_ICA_DMD_video_HCP_REST_fbDMD_REST1_ALL_DR_mode_whole'];
+mkdir('G_INF_video_HCP_REST1_ALL_DR_mode_whole');
+save_dir = [pwd filesep 'G_INF_video_HCP_REST1_ALL_DR_mode_whole'];
 
 lh_surface_file = 'atlas/Q1-Q6_R440.L.inflated.32k_fs_LR.surf.gii';
 rh_surface_file = 'atlas/Q1-Q6_R440.R.inflated.32k_fs_LR.surf.gii';
