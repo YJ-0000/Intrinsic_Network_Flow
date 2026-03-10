@@ -36,7 +36,20 @@ The following `.csv` files from the HCP are required:
 - **FreeSurfer data** (unrestricted dataset)
 - **Restricted data** (includes genetic/zygosity information)
 
-These file paths are stored in `secure_info/path_info.mat` via `Code00_Setup.m`.
+These file paths are stored in `secure_info/path_info.mat` via `Code00_Setup.m`. 
+
+### Atlas Files
+
+The following files are expected in the `atlas/` directory:
+
+| File | Description |
+|------|-------------|
+| `Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors.32k_fs_LR.dlabel.nii` | Glasser HCP-MMP1.0 cortical parcellation (360 areas) |
+| `CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR.dlabel.nii` | Cole-Anticevic cortical + subcortical parcellation |
+| `Q1-Q6_R440.L.inflated.32k_fs_LR.surf.gii` | Left hemisphere inflated surface |
+| `Q1-Q6_R440.R.inflated.32k_fs_LR.surf.gii` | Right hemisphere inflated surface |
+| `S1200.L.sphere.32k_fs_LR.surf.gii` | Left hemisphere spherical surface (for spin tests) |
+| `S1200.R.sphere.32k_fs_LR.surf.gii` | Right hemisphere spherical surface (for spin tests) |
 
 ### Key Dependencies
 
@@ -49,9 +62,14 @@ These file paths are stored in `secure_info/path_info.mat` via `Code00_Setup.m`.
 - [DataViz](https://github.com/povilaskarvelis/DataViz) - violin plot
 ---       
 
+### Setup
+
+Modify `Code00_Setup.m` proper 
 
 
 ## 📁 Repository Structure
+
+Scripts are numbered by analysis domain: `Code0*` for HCP resting-state, `Code1*` for mode characterization, `Code2*` for visualization, `Code3*` for MDTB task, and `Code4*` for audiovisual task.
 
 ### 📊 Prediction Benchmarks
 
@@ -81,8 +99,14 @@ These file paths are stored in `secure_info/path_info.mat` via `Code00_Setup.m`.
 |--------|-------------|
 | `Code11_INF_mode_consistency.m` | Assess consistency / test-retest of INF modes |
 | `Code12_rsfMRI_features.m` | Compute seed-based FC (PCC, SMG, aIns, FEF, TPJ) and Laterality Index |
-| `Code13_Gradients_Phasemap.m` | Correlate INF mode phase maps with connectivity gradients (cortex, cerebellum, thalamus, hippocampus, striatum, amygdala, brainstem); spin/Moran permutation tests |
-| `Code14_Gradients_rsfMRIfeatures.m` | Correlate INF modes with rsfMRI features (DMN/CEN/SN seed FC, MLI); spin-test corrected; temporal evolution over oscillation cycle |
+| `Code13_Compare_Gradients_Phasemap.m` | Correlate INF mode phase maps with connectivity gradients (cortex, cerebellum, thalamus, hippocampus, striatum, amygdala, brainstem); spin/Moran permutation tests |
+| `Code14_Compare_rsfMRIfeatures_Phasemap.m` | Correlate INF modes with rsfMRI features (DMN/CEN/SN seed FC, MLI); spin-test corrected; temporal evolution over oscillation cycle |
+
+> **Note:** `Code12` requires precomputed connectivity gradients (via [BrainSpace](https://github.com/MICA-MNI/BrainSpace)) stored in `results/` as `.mat` files. The following files are expected:
+> `gradient_rsfmri_cortex`, `gradient_rsfmri_cerebellum`, `gradient_rsfmri_thalamus`, `gradient_rsfmri_hippocampus`, `gradient_rsfmri_striatum`, `gradient_rsfmri_amygdala`, `gradient_rsfmri_brainstem`.
+> Each file should contain a `gm` struct with `gm.gradients{1}` as the gradient matrix. **The gradient files used in this study are provided in the repository.**
+
+**The rsfMRI features used in this study are also provided in the repository.** See `results/seed_based_conn.mat` and `MLI.mat`
 
 ### 🖼️ Visualization
 
