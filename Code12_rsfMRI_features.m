@@ -132,3 +132,6 @@ for nsub = 1:num_subjects
 end
 
 save('results/MLI.mat', 'MLI_all');
+
+MLI = squeeze(mean(MLI_all, [1,2]));
+save results/MLI.mat MLI

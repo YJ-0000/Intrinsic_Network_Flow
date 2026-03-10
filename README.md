@@ -42,14 +42,10 @@ These file paths are stored in `secure_info/path_info.mat` via `Code00_Setup.m`.
 
 The following files are expected in the `atlas/` directory:
 
-| File | Description |
-|------|-------------|
-| `Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors.32k_fs_LR.dlabel.nii` | Glasser HCP-MMP1.0 cortical parcellation (360 areas) |
-| `CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR.dlabel.nii` | Cole-Anticevic cortical + subcortical parcellation |
-| `Q1-Q6_R440.L.inflated.32k_fs_LR.surf.gii` | Left hemisphere inflated surface |
-| `Q1-Q6_R440.R.inflated.32k_fs_LR.surf.gii` | Right hemisphere inflated surface |
-| `S1200.L.sphere.32k_fs_LR.surf.gii` | Left hemisphere spherical surface (for spin tests) |
-| `S1200.R.sphere.32k_fs_LR.surf.gii` | Right hemisphere spherical surface (for spin tests) |
+- **Glasser HCP-MMP1.0 parcellation** (360 areas): `Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors.32k_fs_LR.dlabel.nii`
+- **Cole-Anticevic parcellation** (cortical + subcortical): `CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR.dlabel.nii`
+- **Inflated surfaces**: `Q1-Q6_R440.{L,R}.inflated.32k_fs_LR.surf.gii`
+- **Spherical surfaces** (for spin tests): `S1200.{L,R}.sphere.32k_fs_LR.surf.gii`
 
 ### Key Dependencies
 

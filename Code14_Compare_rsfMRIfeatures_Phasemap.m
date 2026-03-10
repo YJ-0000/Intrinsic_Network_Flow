@@ -34,7 +34,7 @@ conn_maps = struct( ...
     'SN',  load_results.seed_conn_aIns_R);
 
 load_results = load('results/MLI.mat');
-MLI = squeeze(mean(load_results.MLI_all, [1,2]));
+MLI = load_results.MLI;
 
 feature_names = {'DMN', 'CEN', 'SN', 'MLI'};
 feature_maps  = {conn_maps.DMN, conn_maps.CEN, conn_maps.SN, MLI};
