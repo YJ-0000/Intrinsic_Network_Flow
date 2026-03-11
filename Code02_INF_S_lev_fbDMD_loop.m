@@ -78,8 +78,9 @@ for target_dim = target_dim_list
 
             [Phi_all, ~] = performDMD(time_course_sub(:, 2:end), time_course_sub(:, 1:end-1), time_len, TRtarget);
 
-            temp_v = pinv(time_course_sub(:, 1:end-1)) * Phi_all;
-            Phi_orig_sub = data_normalized(:, 2:720) * temp_v;
+            % temp_v = pinv(time_course_sub(:, 1:end-1)) * Phi_all;
+            % Phi_orig_sub = data_normalized(:, 2:720) * temp_v;
+            Phi_orig_sub = source_maps' * Phi_all;
 
             [R2_DM_array, R2_DM_array_cortex, R2_DM_array_subcortical, ...
              R2_null_array, R2_null_array_cortex, R2_null_array_subcortical] ...
@@ -98,16 +99,7 @@ for target_dim = target_dim_list
 
         toc
     end
-
-    %% display
-    figure;
-    bar( [...
-        squeeze(mean(R2_DM_array_list(:,:,1,:), [1,2])), ...
-        squeeze(mean(R2_lin_array_list(:,:,1,:), [1,2])), ...
-        squeeze(mean(R2_null_array_list(:,:,1,:), [1,2])) ...
-    ]');
-    legend({'predict 1s ahead','predict 2s ahead','predict 4s ahead','predict 8s ahead'});
-
+    
     %% Save
     dtStr = datestr(now, 'yyyymmdd_HHMMSS');
 
