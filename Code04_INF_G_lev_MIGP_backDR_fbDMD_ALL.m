@@ -7,7 +7,7 @@ slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
 
 %% Run options
 
-method_subject_proj_list = {'DR','TL-cov'};
+method_subject_proj_list = {'DR'};
 
 max_dim = 100;
 target_dim_list = 27;
