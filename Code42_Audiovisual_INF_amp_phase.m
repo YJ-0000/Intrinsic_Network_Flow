@@ -198,7 +198,7 @@ num_cond = length(cond_classify);
 feature_configs = {
     'Phase (cos+sin)',     flow_include, {'cos','sin'};
     'Amplitude',           flow_include, {'ampl'};
-    'ICA activations',     1:target_dim, {'ic'};
+    'IC activations',      1:target_dim, {'ic'};
     'Phase + Amplitude',   flow_include, {'cos','sin','ampl'};
     'Activation maps',     [],           {'act'};
 };

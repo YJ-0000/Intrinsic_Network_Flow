@@ -38,7 +38,8 @@ if ~isnan(slurm_id)
 end
 
 %% Prediction method names
-method_names = {'Null', 'Rest_STF', 'Task_STF', 'Task_TF', 'Task_SF', 'Task_A'};
+% method_names = {'Null', 'Rest_STF', 'Task_STF', 'Task_TF', 'Task_SF', 'Task_A'};
+method_names = {'Null', 'Rest_STF'};
 num_methods  = length(method_names);
 
 % Accumulate results across subjects/runs
@@ -129,28 +130,28 @@ for nsub = 1:length(sub_dirs)
         % Build training data from other runs
         X_train = nan(voxel_dim, (num_runs-1)*(time_dim-t_step));
         Y_train = nan(voxel_dim, (num_runs-1)*(time_dim-t_step));
-        sm_maps_tasks = nan(voxel_dim, target_dim, num_runs-1);
-        count = 0;
-        for nrun_inner = 1:num_runs
-            if nrun_inner == nrun, continue; end
-            count = count + 1;
-            seg = (count-1)*(time_dim-t_step)+1 : count*(time_dim-t_step);
-            X_train(:, seg) = data_task_sub{nrun_inner}(:, 1+t_step:end);
-            Y_train(:, seg) = data_task_sub{nrun_inner}(:, 1:end-t_step);
+        % sm_maps_tasks = nan(voxel_dim, target_dim, num_runs-1);
+        % count = 0;
+        % for nrun_inner = 1:num_runs
+        %     if nrun_inner == nrun, continue; end
+        %     count = count + 1;
+        %     seg = (count-1)*(time_dim-t_step)+1 : count*(time_dim-t_step);
+        %     X_train(:, seg) = data_task_sub{nrun_inner}(:, 1+t_step:end);
+        %     Y_train(:, seg) = data_task_sub{nrun_inner}(:, 1:end-t_step);
+        % 
+        %     d_inner = data_task_sub{nrun_inner};
+        %     sm_maps_tasks(:,:,count) = d_inner * pinv(inv_source * d_inner);
+        % end
 
-            d_inner = data_task_sub{nrun_inner};
-            sm_maps_tasks(:,:,count) = d_inner * pinv(inv_source * d_inner);
-        end
+        % sm_maps_task_gen = mean(sm_maps_tasks, 3);
+        % Phi_sub_task_gen = sm_maps_task_gen * Phi_all;
 
-        sm_maps_task_gen = mean(sm_maps_tasks, 3);
-        Phi_sub_task_gen = sm_maps_task_gen * Phi_all;
-
-        % Task temporal fingerprints
-        D_task_onlyTF = computeDMcoefficients([], Phi_sub, [], X_train, Y_train);
-        D_task_STF    = computeDMcoefficients([], Phi_sub_task_gen, [], X_train, Y_train);
-
-        % Task-general transition matrix
-        A_task_gen = (inv_source * X_train) / (inv_source * Y_train);
+        % % Task temporal fingerprints
+        % D_task_onlyTF = computeDMcoefficients([], Phi_sub, [], X_train, Y_train);
+        % D_task_STF    = computeDMcoefficients([], Phi_sub_task_gen, [], X_train, Y_train);
+        % 
+        % % Task-general transition matrix
+        % A_task_gen = (inv_source * X_train) / (inv_source * Y_train);
 
         % Precompute test quantities
         Y_test   = data_test(:, 1:end-t_step);
@@ -168,21 +169,21 @@ for nsub = 1:length(sub_dirs)
         % 2) Rest STF (rest spatial + rest temporal fingerprint)
         R2_run(2) = predict_INF(Y_target, Y_test, Phi_sub, D_rest, SS_tot, valid_vox);
 
-        % 3) Task STF (task spatial + task temporal fingerprint)
-        R2_run(3) = predict_INF(Y_target, Y_test, Phi_sub_task_gen, D_task_STF, SS_tot, valid_vox);
-
-        % 4) Task TF only (rest spatial + task temporal fingerprint)
-        R2_run(4) = predict_INF(Y_target, Y_test, Phi_sub, D_task_onlyTF, SS_tot, valid_vox);
-
-        % 5) Task SF only (task spatial + rest temporal fingerprint)
-        R2_run(5) = predict_INF(Y_target, Y_test, Phi_sub_task_gen, D_rest, SS_tot, valid_vox);
-
-        % 6) Task-general A matrix
-        IC_Y = inv_source * Y_test;
-        X_pred = source_maps * (A_task_gen * IC_Y);
-        X_resid = Y_target - X_pred;
-        X_pred = real(D_task_onlyTF(1)) * X_resid + X_pred;
-        R2_run(6) = compute_R2(Y_target, X_pred, SS_tot, valid_vox);
+        % % 3) Task STF (task spatial + task temporal fingerprint)
+        % R2_run(3) = predict_INF(Y_target, Y_test, Phi_sub_task_gen, D_task_STF, SS_tot, valid_vox);
+        % 
+        % % 4) Task TF only (rest spatial + task temporal fingerprint)
+        % R2_run(4) = predict_INF(Y_target, Y_test, Phi_sub, D_task_onlyTF, SS_tot, valid_vox);
+        % 
+        % % 5) Task SF only (task spatial + rest temporal fingerprint)
+        % R2_run(5) = predict_INF(Y_target, Y_test, Phi_sub_task_gen, D_rest, SS_tot, valid_vox);
+        % 
+        % % 6) Task-general A matrix
+        % IC_Y = inv_source * Y_test;
+        % X_pred = source_maps * (A_task_gen * IC_Y);
+        % X_resid = Y_target - X_pred;
+        % X_pred = real(D_task_onlyTF(1)) * X_resid + X_pred;
+        % R2_run(6) = compute_R2(Y_target, X_pred, SS_tot, valid_vox);
 
         R2_all = [R2_all, R2_run]; %#ok<AGROW>
 

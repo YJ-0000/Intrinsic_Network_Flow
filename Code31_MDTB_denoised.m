@@ -17,8 +17,8 @@ TR = 1;
 Fs = 1/TR;  % Hz
 
 % Define the frequency range for the band-pass filter
-lowCutoff = 0.008;  % Hz
-highCutoff = 0.15;  % Hz
+lowCutoff = 0.01;  % Hz
+highCutoff = 0.1;  % Hz
 
 %% Get env variables
 slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));

@@ -17,8 +17,8 @@ TR = 2.47;
 Fs = 1/TR;  % Hz
 
 % Define the frequency range for the band-pass filter
-lowCutoff = 0.008;  % Hz
-highCutoff = 0.15;  % Hz
+lowCutoff = 0.01;  % Hz
+highCutoff = 0.1;  % Hz
 %%
 sub_AS_dirs = dir(fullfile(as_data_path,'sub-*'));
 sub_AS_dirs = sub_AS_dirs([sub_AS_dirs.isdir]);
