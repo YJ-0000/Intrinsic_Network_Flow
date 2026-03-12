@@ -77,10 +77,13 @@ for target_dim = target_dim_list
             time_course_sub = inv_source * data_normalized(:, 1:720);
 
             [Phi_all, ~] = performDMD(time_course_sub(:, 2:end), time_course_sub(:, 1:end-1), time_len, TRtarget);
-
+            
+            %%%% exact DMD
             % temp_v = pinv(time_course_sub(:, 1:end-1)) * Phi_all;
             % Phi_orig_sub = data_normalized(:, 2:720) * temp_v;
-            Phi_orig_sub = source_maps' * Phi_all;
+            %%%% DR-like
+            temp_v = pinv(time_course_sub) * Phi_all;
+            Phi_orig_sub = data_normalized(:, 1:720) * temp_v;
 
             [R2_DM_array, R2_DM_array_cortex, R2_DM_array_subcortical, ...
              R2_null_array, R2_null_array_cortex, R2_null_array_subcortical] ...
