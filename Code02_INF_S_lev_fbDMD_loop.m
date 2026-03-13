@@ -88,7 +88,7 @@ for target_dim = target_dim_list
             [R2_DM_array, R2_DM_array_cortex, R2_DM_array_subcortical, ...
              R2_null_array, R2_null_array_cortex, R2_null_array_subcortical] ...
                 = benchmark_using_DMs(Phi_orig_sub, data_normalized, 1, 1, 0.6, ...
-                    fitting_time_window_list, predict_time_window_list, false);
+                    fitting_time_window_list, predict_time_window_list, [], false);
 
             R2_DM_array_list(nfolder, ndir, :, :)              = R2_DM_array;
             R2_null_array_list(nfolder, ndir, :, :)            = R2_null_array;
@@ -173,4 +173,10 @@ function [Phi_all, lambda] = performDMD(X, Y, time_len, TRtarget)
 
     % Extract eigenvalues
     lambda = diag(D);
+
+    % (Optional) Mode filtering based on magnitude or period
+    % idx_exclude = abs(lambda) < 1e-4 | ...
+    %               2*pi*TRtarget ./ abs(angle(lambda)) > time_len * TRtarget;
+    % lambda(idx_exclude) = [];
+    % Phi_all(:,idx_exclude) = [];
 end
