@@ -107,9 +107,9 @@ for target_dim = target_dim_list
     dtStr = datestr(now, 'yyyymmdd_HHMMSS');
 
     if strcmp(sample_set, 'discovery')
-        filename = sprintf('results/disc_subject_wise_ica%03d_dmd_results_%s.mat', target_dim, dtStr);
+        filename = sprintf('results/disc_INF_S_lev_%03d_results_%s.mat', target_dim, dtStr);
     elseif strcmp(sample_set, 'replication')
-        filename = sprintf('results/repl_subject_wise_ica%03d_dmd_results_%s.mat', target_dim, dtStr);
+        filename = sprintf('results/repl_INF_S_lev_%03d_results_%s.mat', target_dim, dtStr);
     else
         error('Undefined sample set!!');
     end
@@ -173,10 +173,4 @@ function [Phi_all, lambda] = performDMD(X, Y, time_len, TRtarget)
 
     % Extract eigenvalues
     lambda = diag(D);
-
-    % (Optional) Mode filtering based on magnitude or period
-    % idx_exclude = abs(lambda) < 1e-4 | ...
-    %               2*pi*TRtarget ./ abs(angle(lambda)) > time_len * TRtarget;
-    % lambda(idx_exclude) = [];
-    % Phi_all(:,idx_exclude) = [];
 end
