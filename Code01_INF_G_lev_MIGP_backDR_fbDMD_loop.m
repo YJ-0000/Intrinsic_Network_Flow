@@ -217,8 +217,8 @@ for target_dim = target_dim_list
 
                 % Subject projection
                 if strcmp(method_subject_proj, 'DR') || strcmp(method_subject_proj, 'GroupTF')
-                    tv = pinv(time_course_sub(:, 2:end)) * Phi_all;
-                    Phi_orig_sub = data_normalized(:, 2:720) * tv;
+                    tv = pinv(time_course_sub) * Phi_all;
+                    Phi_orig_sub = data_normalized * tv;
                 elseif strcmp(method_subject_proj, 'TL-cov')
                     tv = (time_course_sub(:, 1:end-1)' / Z) * Phi_all;
                     Phi_orig_sub = data_normalized(:, 2:720) * tv;
