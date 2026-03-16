@@ -7,7 +7,7 @@ mkdir('figures');
 sample_set = 'discovery';
 % sample_set = 'replication';
 
-%% Load G-ICA-DMD results
+%% Load INF results
 target_dim_list = 10:10:100;
 num_subjects = 105;
 predict_time_window_list = [1,2,4,8];
@@ -68,7 +68,7 @@ for i_dim = 1:n_dims
     all_R2_null(i_dim, :, :) = squeeze(mean(R2_temp(:,:,1,:), 2));
 end
 
-%% Load subject-wise ICA-DMD results
+%% Load subject-wise INF results
 all_R2_sub_ica  = zeros(n_dims, num_subjects, n_windows);
 mean_R2_sub_ica = zeros(n_windows, n_dims);
 std_R2_sub_ica  = zeros(n_windows, n_dims);
@@ -77,9 +77,9 @@ for i_dim = 1:n_dims
     target_dim = target_dim_list(i_dim);
 
     if strcmp(sample_set, 'discovery')
-        sub_result_files = dir(sprintf('results/disc_subject_wise_ica%03d_dmd_results_*.mat', target_dim));
+        sub_result_files = dir(sprintf('results/disc_INF_S_lev_%03d_results_*.mat', target_dim));
     elseif strcmp(sample_set, 'replication')
-        sub_result_files = dir(sprintf('results/repl_subject_wise_ica%03d_dmd_results_*.mat', target_dim));
+        sub_result_files = dir(sprintf('results/repl_INF_S_lev_%03d_results_*.mat', target_dim));
     else
         error('Undefined sample set!!');
     end
@@ -105,8 +105,8 @@ end
 %% Ablation: DR vs noSF vs noTF — paired t-tests & heatmaps
 % DR vs noSF
 ablation_pairs = {
-    'DR',   'noSF',  all_R2_DR,   all_R2_noSF;
-    'DR',   'noTF',  all_R2_DR,   all_R2_noTF;
+    'STF',   'noSF',  all_R2_DR,   all_R2_noSF;
+    'STF',   'noTF',  all_R2_DR,   all_R2_noTF;
     'noSF', 'noTF',  all_R2_noSF, all_R2_noTF;
 };
 
@@ -185,7 +185,7 @@ for ip = 1:size(ablation_pairs, 1)
     print(gcf, sprintf('figures/ablation_%s_vs_%s.png', name1, name2), '-dpng', '-r600');
 end
 
-%% DR vs subject-wise ICA — paired t-tests & heatmap
+%% Group-level vs subject-wise INF — paired t-tests & heatmap
 tmat = zeros(n_dims, n_windows);
 pmat = zeros(n_dims, n_windows);
 
@@ -211,7 +211,7 @@ caxis([-maxT, maxT]);
 colorbar;
 set(ax1, 'XTick', 1:n_dims, 'XTickLabel', target_dim_list, ...
          'YTick', 1:n_windows, 'YTickLabel', predict_time_window_list, 'FontSize', 12);
-title('T-value: DR vs. subject-wise ICA', 'FontSize', 22, 'FontName', 'Times New Roman');
+title('T-value: Group INF vs. sub-wise INF', 'FontSize', 22, 'FontName', 'Times New Roman');
 xlabel('Number of ICs (Q)', 'FontSize', 18, 'FontName', 'Times New Roman');
 ylabel('Prediction horizon (TR)', 'FontSize', 18, 'FontName', 'Times New Roman');
 
@@ -231,7 +231,7 @@ caxis([0, 1]);
 colorbar;
 set(ax2, 'XTick', 1:n_dims, 'XTickLabel', target_dim_list, ...
          'YTick', 1:n_windows, 'YTickLabel', predict_time_window_list, 'FontSize', 12);
-title('p-value: DR vs. subject-wise ICA', 'FontSize', 22, 'FontName', 'Times New Roman');
+title('p-value: Group INF vs. sub-wise INF', 'FontSize', 22, 'FontName', 'Times New Roman');
 xlabel('Number of ICs (Q)', 'FontSize', 18, 'FontName', 'Times New Roman');
 ylabel('Prediction horizon (TR)', 'FontSize', 18, 'FontName', 'Times New Roman');
 
@@ -244,12 +244,12 @@ for i_win = 1:n_windows
 end
 hold(ax2, 'off');
 
-print(gcf, 'figures/comparison_DR_vs_subwise_ICA.png', '-dpng', '-r600');
+print(gcf, 'figures/comparison_GroupINF_vs_subINF.png', '-dpng', '-r600');
 
 %% Comparing best method across Q — 1-step ahead
 fprintf('\n=== Best method per Q (1-step ahead) ===\n');
 methods_all  = {all_R2_DR, all_R2_noSF, all_R2_noTF, all_R2_sub_ica};
-method_names = {'DR', 'noSF', 'noTF', 'subject-wise ICA'};
+method_names = {'Group INF with STF', 'Group INF with noSF', 'Group INF with noTF', 'subject-wise INF'};
 
 for i_dim = 1:n_dims
     temp_means = zeros(1, length(methods_all));
@@ -277,15 +277,15 @@ p_mat_Q(mask_tri) = NaN;
 figure('Position', [100 100 800 600]);
 h = heatmap(string(target_dim_list), string(target_dim_list), p_mat_Q, ...
     'ColorLimits', [0 1], 'CellLabelFormat', '%.4f');
-h.Title    = sprintf('p-values (1 TR-ahead prediction, DR)');
+h.Title    = sprintf('p-values (1 TR-ahead prediction, Group INF)');
 h.XLabel   = 'Number of ICs (Q)';
 h.YLabel   = 'Number of ICs (Q)';
 h.FontSize = 18;
 h.FontName = 'Times New Roman';
 
-print(gcf, 'figures/DR_Q_comparison.png', '-dpng', '-r600');
+print(gcf, 'figures/INF_Q_comparison.png', '-dpng', '-r600');
 
-%% Bar plot: DR vs noSF vs noTF vs subject-wise ICA
+%% Bar plot: Group INF with STF vs noSF vs noTF vs subject-wise INF
 figure;
 x_labels = {'predict 1s ahead', 'predict 2s ahead', 'predict 4s ahead', 'predict 8s ahead'};
 grey_shades = [0.8 0.8 0.8; 0.6 0.6 0.6; 0.4 0.4 0.4; 0.2 0.2 0.2];
@@ -309,7 +309,7 @@ for i_pred = 1:4
 
     title(x_labels{i_pred});
     ylabel('Mean R^2');
-    legend({'DR', 'noSF', 'noTF', 'subject-wise ICA'}, 'Location', 'southeast');
+    legend(method_names, 'Location', 'southeast');
     ylim([0, inf]);
     hold off;
 end
@@ -322,7 +322,7 @@ xq = 10:1:100;
 
 fprintf('\n=== Optimal Q (interpolated, 1-step ahead) ===\n');
 interp_methods = {mean_R2_DR, mean_R2_noSF, mean_R2_noTF, mean_R2_sub_ica};
-interp_names   = {'DR', 'noSF', 'noTF', 'subject-wise ICA'};
+interp_names   = method_names;
 
 for i_pred = 1:4
     fprintf('predict %ds ahead: ', i_pred);
@@ -376,13 +376,13 @@ p_mat_fine(mask_tri_fine) = NaN;
 figure('Position', [100 100 800 600]);
 h = heatmap(string(target_dim_fine_list), string(target_dim_fine_list), p_mat_fine, ...
     'ColorLimits', [0 1], 'CellLabelFormat', '%.4f');
-h.Title    = sprintf('p-values (1 TR-ahead, DR, fine Q)');
+h.Title    = sprintf('p-values (1 TR-ahead, Group INF, fine Q)');
 h.XLabel   = 'Number of ICs (Q)';
 h.YLabel   = 'Number of ICs (Q)';
 h.FontSize = 18;
 h.FontName = 'Times New Roman';
 
-print(gcf, 'figures/DR_Q_comparison_fine.png', '-dpng', '-r600');
+print(gcf, 'figures/INF_Q_comparison_fine.png', '-dpng', '-r600');
 
 %% Fine Q — bar plot (DR only)
 figure;
