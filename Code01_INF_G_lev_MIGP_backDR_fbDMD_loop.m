@@ -11,7 +11,7 @@ method_subject_proj_list = {'DR','GroupSF','GroupTF','GroupSTF'};
 
 max_dim = 100;
 if isnan(slurm_id) || slurm_id == 1 || slurm_id == 3
-    target_dim_list = 100;
+    target_dim_list = 10:10:100;
 elseif slurm_id == 2 || slurm_id == 4
     target_dim_list = 21:1:29;
     pause(60);
