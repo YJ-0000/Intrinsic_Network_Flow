@@ -31,9 +31,9 @@ hcp_rest1_file_list = file_list_data.hcp_rest1_file_list;
 sub_ids = file_list_data.sub_ids_rest1;
 
 if strcmp(sample_set, 'discovery')
-    sub_ids_test = data_load.sub_ids_set1_test;
-elseif strcmp(sample_set, 'replication')
     sub_ids_test = data_load.sub_ids_set2_test;
+elseif strcmp(sample_set, 'replication')
+    sub_ids_test = data_load.sub_ids_set1_test;
 else
     error('Undefined sample set!!');
 end
