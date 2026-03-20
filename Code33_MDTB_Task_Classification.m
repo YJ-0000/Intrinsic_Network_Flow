@@ -15,7 +15,6 @@ beta_ampl_vals = cell(num_subjects, num_sessions);
 beta_sin_vals  = cell(num_subjects, num_sessions);
 beta_cos_vals  = cell(num_subjects, num_sessions);
 beta_ic_vals   = cell(num_subjects, num_sessions);
-FC_ICN_vals    = cell(num_subjects, num_sessions);
 task_list      = cell(num_subjects, num_sessions);
 
 for nsub = 1:num_subjects
@@ -24,7 +23,6 @@ for nsub = 1:num_subjects
     beta_cos_vals(nsub, :)  = res.beta_cos_vals;
     beta_sin_vals(nsub, :)  = res.beta_sin_vals;
     beta_ic_vals(nsub, :)   = res.beta_ic_vals;
-    FC_ICN_vals(nsub, :)    = res.FC_ICN_vals;
     task_list(nsub, :)      = res.task_list;
 end
 
@@ -82,7 +80,7 @@ end
 feature_sets = {
     [beta_agg.cos(:, flow_include), beta_agg.sin(:, flow_include)],  'Phase (cos+sin)';
     beta_agg.ampl(:, flow_include),                                   'Amplitude';
-    beta_agg.ic,                                                      'ICA activations';
+    beta_agg.ic,                                                      'IN activations';
     [beta_agg.cos(:, flow_include), beta_agg.sin(:, flow_include), ...
      beta_agg.ampl(:, flow_include)],                                 'Phase + Amplitude';
 };

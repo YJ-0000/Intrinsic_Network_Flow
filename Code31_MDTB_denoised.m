@@ -17,8 +17,8 @@ TR = 1;
 Fs = 1/TR;  % Hz
 
 % Define the frequency range for the band-pass filter
-lowCutoff = 0.01;  % Hz
-highCutoff = 0.1;  % Hz
+lowCutoff = 0.008;  % Hz
+highCutoff = 0.15;  % Hz
 
 %% Get env variables
 slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
@@ -48,7 +48,7 @@ for nsub = sub_idx_list
         cifti_file_path = fullfile(cifti_file(nrun).folder,cifti_file(nrun).name);
     
         denoised_cifti_file_name = replace(cifti_file(nrun).name,...
-            'desc-8mmSmoothed_bold.dtseries.nii','desc-8mmSmoothedDenoised_bold.dtseries.nii');
+            'desc-8mmSmoothed_bold.dtseries.nii','desc-8mmSmoothedDenoised2_bold.dtseries.nii');
         denoised_cifti_file_path = fullfile(cifti_file(nrun).folder,...
             denoised_cifti_file_name);
     

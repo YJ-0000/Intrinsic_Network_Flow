@@ -159,7 +159,7 @@ for nsub = 1:num_subs
             b = REML_spm(X, IC_sub_tc');
             beta_ic_vals{nsub, nrun} = b(2:end, :);
         catch e
-            warning('Error in IC ReML: %s', e.message);
+            warning(sprintf('Error in IC ReML: %s', e.message)); %#ok<SPWRN>
         end
 
         % --- FC among ICA components (task-weighted) ---
@@ -211,8 +211,8 @@ for nsub = 1:num_subs
             FC_rest_ROIs_vals{nsub, nrest} = corr(roi_ts');
 
             % Subject spatial maps from rest
-            IC_tc = inv_source * data_raw;
-            sm_maps_rest{nrest} = data_raw * pinv(IC_tc);
+            IC_tc = inv_source * data_norm;
+            sm_maps_rest{nrest} = data_norm * pinv(IC_tc);
         end
         sm_maps = 0.5 * (sm_maps_rest{1} + sm_maps_rest{2});
         Phi_sub = sm_maps * Phi_all;
