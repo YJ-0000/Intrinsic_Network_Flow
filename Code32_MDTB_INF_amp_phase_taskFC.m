@@ -74,7 +74,17 @@ for nsub = 1:num_subs
         '**', 'func', '*desc-8mmSmoothedDenoised_bold.dtseries.nii'));
     event_files = dir(fullfile(sub_unproc_dirs(nsub).folder, sub_unproc_dirs(nsub).name, ...
         '**', 'func', '*events.tsv'));
+    
+    % Remove rest event files (no corresponding cifti)
+    rest_mask = contains({cifti_files.name}, 'task-rest', 'IgnoreCase', true);
+    rest_files = cifti_files(rest_mask);
+    cifti_files(rest_mask) = [];
 
+    %%% sort and check matching
+    [is_matched, cifti_files, event_files] ...
+        = check_bids_match(cifti_files, event_files, true);
+    assert(is_matched, 'Event files are not matching.');
+    
     if isempty(cifti_files), continue; end
 
     %% Task runs
@@ -192,13 +202,13 @@ for nsub = 1:num_subs
     end
 
     %% Rest runs (if present: runs 33-34)
-    if length(cifti_files) > 32
+    if ~isempty(rest_files)
         sm_maps_rest = cell(1, 2);
         for nrest = 1:2
-            nrun = 32 + nrest;
+            nrun = nrest;
             fprintf('  Rest run %d\n', nrest);
 
-            data = cifti_read(fullfile(cifti_files(nrun).folder, cifti_files(nrun).name));
+            data = cifti_read(fullfile(rest_files(nrun).folder, rest_files(nrun).name));
             data_raw  = data.cdata;
             data_norm = normalize(data_raw')';
             data_norm(isnan(data_norm)) = 0;

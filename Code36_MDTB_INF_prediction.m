@@ -59,7 +59,8 @@ for nsub = 1:length(sub_dirs)
     if length(cifti_files) <= 32, continue; end
 
     %% Rest runs → subject spatial maps and rest temporal fingerprint
-    rest_files = cifti_files(33:end);
+    rest_mask = contains({cifti_files.name}, 'task-rest', 'IgnoreCase', true);
+    rest_files = cifti_files(rest_mask);
     sm_maps_rest = cell(1, 2);
     for nrest = 1:2
         data = cifti_read(fullfile(rest_files(nrest).folder, rest_files(nrest).name));

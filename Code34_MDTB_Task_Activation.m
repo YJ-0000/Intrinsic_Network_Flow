@@ -44,6 +44,21 @@ for nsub = 1:num_subs
     confounds_files = dir(fullfile(sub_dirs(nsub).folder, sub_dirs(nsub).name, ...
         '**', 'func', '*confounds_timeseries.tsv'));
 
+    % Remove rest event files (no corresponding cifti)
+    rest_mask = contains({cifti_files.name}, 'task-rest', 'IgnoreCase', true);
+    cifti_files(rest_mask) = [];
+    rest_mask = contains({confounds_files.name}, 'task-rest', 'IgnoreCase', true);
+    confounds_files(rest_mask) = [];
+
+    %%% sort and check matching
+    [is_matched, cifti_files, event_files] ...
+        = check_bids_match(cifti_files, event_files, true);
+    assert(is_matched, 'Event files are not matching.');
+    [is_matched, cifti_files, confounds_files] ...
+        = check_bids_match(cifti_files, confounds_files, true);
+    assert(is_matched, 'Confound files are not matching.');
+    
+    continue
     if isempty(cifti_files), continue; end
 
     for nrun = 1:length(event_files)

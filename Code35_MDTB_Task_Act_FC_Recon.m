@@ -97,7 +97,7 @@ load_results = load(fullfile(g_ica_files(end).folder, g_ica_files(end).name));
 lambda      = load_results.lambda;
 source_maps = load_results.source_maps';
 inv_source  = load_results.inv_source;
-Phi_orig    = load_results.Phi_orig_DL;
+Phi_orig    = load_results.Phi_orig_DR;
 
 % Load temporal fingerprints
 tf_files = dir(sprintf('results/Temporal_Fingerprints_%s_ALL_027_results_20*.mat', REST_num));
