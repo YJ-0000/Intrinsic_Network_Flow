@@ -7,7 +7,7 @@ num_subjects = length(result_files);
 % Load first file to get method names and count
 res0 = load(fullfile(result_files(1).folder, result_files(1).name));
 method_names = fieldnames(res0);
-num_run  = size(res0.R2_INF_rest_STF_all,2);
+num_run  = size(res0.R2_all,2);
 
 % Collect mean R2 per subject per method
 R2_INF_per_subject = nan(num_subjects, num_run);
@@ -16,8 +16,8 @@ R2_null_per_subject = nan(num_subjects, num_run);
 for nsub = 1:num_subjects
     res = load(fullfile(result_files(nsub).folder, result_files(nsub).name));
     % R2_all is (num_methods x num_runs) — average across runs per subject
-    R2_INF_per_subject(nsub, :) = res.R2_INF_rest_STF_all;
-    R2_null_per_subject(nsub, :) = res.R2_null_all;
+    R2_INF_per_subject(nsub, :) = res.R2_all(2,:);
+    R2_null_per_subject(nsub, :) = res.R2_all(1,:);
 end
 
 %% Summary
