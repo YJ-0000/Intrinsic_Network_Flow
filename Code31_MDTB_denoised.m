@@ -43,7 +43,13 @@ for nsub = sub_idx_list
         fullfile(sub_MDTB_dirs(nsub).folder,sub_MDTB_dirs(nsub).name,'**','func','*space-fsLR_den-91k_desc-8mmSmoothed_bold.dtseries.nii'));
     confounds_file = dir(...
             fullfile(sub_MDTB_dirs(nsub).folder,sub_MDTB_dirs(nsub).name,'**','func','*confounds_timeseries.tsv'));
-        
+    
+    %%% sort and check matching
+    [is_matched, cifti_file, confounds_file] ...
+        = check_bids_match(cifti_file, confounds_file, true);
+    assert(is_matched, 'Confound files are not matching.');
+    
+    %%% Denosing Loop
     for nrun = 1:length(cifti_file)
         cifti_file_path = fullfile(cifti_file(nrun).folder,cifti_file(nrun).name);
     
