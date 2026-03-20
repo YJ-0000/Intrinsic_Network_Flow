@@ -48,7 +48,7 @@ for nsub = sub_idx_list
         cifti_file_path = fullfile(cifti_file(nrun).folder,cifti_file(nrun).name);
     
         denoised_cifti_file_name = replace(cifti_file(nrun).name,...
-            'desc-8mmSmoothed_bold.dtseries.nii','desc-8mmSmoothedDenoised2_bold.dtseries.nii');
+            'desc-8mmSmoothed_bold.dtseries.nii','desc-8mmSmoothedDenoised_bold.dtseries.nii');
         denoised_cifti_file_path = fullfile(cifti_file(nrun).folder,...
             denoised_cifti_file_name);
     
