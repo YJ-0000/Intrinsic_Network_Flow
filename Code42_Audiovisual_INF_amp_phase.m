@@ -63,6 +63,18 @@ for nsub = 1:num_subjects
     confounds_files = dir(fullfile(sub_dirs(nsub).folder, sub_dirs(nsub).name, ...
         '**', 'func', '*confounds_timeseries.tsv'));
 
+    %%% sort and check matching
+    [is_matched, cifti_files_denoised, cifti_files_smoothed] ...
+        = check_bids_match(cifti_files_denoised, cifti_files_smoothed, true);
+    assert(is_matched, 'Smoothed files are not matching.');
+    [is_matched, cifti_files_denoised, event_files] ...
+        = check_bids_match(cifti_files_denoised, event_files, true);
+    assert(is_matched, 'Event files are not matching.');
+    [is_matched, cifti_files_denoised, confounds_files] ...
+        = check_bids_match(cifti_files_denoised, confounds_files, true);
+    assert(is_matched, 'Confounds files are not matching.');
+    
+    %%% Estimation Loop
     for nrun = 1:num_runs
         tic
         fprintf('  Run %d / %d\n', nrun, num_runs);
@@ -89,6 +101,7 @@ for nsub = 1:num_subjects
 
         type_list = sort(unique(trial_types));
         num_type  = length(type_list);
+        assert(num_type==8, 'Missing task conditions!!');
         total_time = TR * num_frames;
 
         % Build HRF-convolved design matrix
@@ -101,10 +114,11 @@ for nsub = 1:num_subjects
         end
         X = [ones(num_frames, 1), hrf_weights];
 
-        % Subject spatial maps and modes
+        % IC time course and Voxel-level modes
         IC_tc   = inv_source * data_norm;
-        sm_maps = data_norm * pinv(IC_tc);
-        Phi_sub = sm_maps * Phi_all;
+        Phi_sub = source_maps * Phi_all;
+        % sm_maps = data_norm * pinv(IC_tc);
+        % Phi_sub = sm_maps * Phi_all;
 
         % Compute temporal coefficients via sliding DMD
         D = computeDMcoefficients(data_norm, Phi_sub);
@@ -157,38 +171,6 @@ for nsub = 1:num_subjects
 
         toc
     end
-end
-
-%% Condition-level analysis (Flow #1)
-flow_num = 1;
-
-mean_beta_ampl = squeeze(mean(beta_ampl_vals(:,:,:,flow_num), 2));
-mean_beta_cos  = squeeze(mean(beta_cos_vals(:,:,:,flow_num), 2));
-mean_beta_sin  = squeeze(mean(beta_sin_vals(:,:,:,flow_num), 2));
-
-metric_names = {'Amplitude', 'Cosine (pattern)', 'Sine (progression)'};
-metric_data  = {mean_beta_ampl, mean_beta_cos, mean_beta_sin};
-
-for i_metric = 1:3
-    data_m = metric_data{i_metric};
-    fprintf('\n=== %s ===\n', metric_names{i_metric});
-
-    plot_bar_with_sem(data_m, cond_labels, cond_display_order);
-    title(metric_names{i_metric});
-
-    % Key contrasts vs null (condition 7)
-    contrasts = {6, 'A vs Null'; 8, 'V vs Null'; 2, 'AV vs Null'};
-    for ic = 1:size(contrasts, 1)
-        [~, p, ~, st] = ttest(data_m(:, contrasts{ic,1}), data_m(:, 7));
-        fprintf('  %s: t=%.4f, p=%.6f\n', contrasts{ic,2}, st.tstat, p);
-    end
-
-    % Sequential contrasts along display order
-    p_seq = nan(1, length(cond_display_order)-1);
-    for k = 1:length(cond_display_order)-1
-        [~, p_seq(k)] = ttest(data_m(:, cond_display_order(k)), data_m(:, cond_display_order(k+1)));
-    end
-    fprintf('  Sequential p-values: %s\n', num2str(p_seq, '%.4f '));
 end
 
 %% LOSO Classification
@@ -259,9 +241,7 @@ for i_cfg = 1:size(feature_configs, 1)-1
             X_test  = (X_test - mu) * coeff;
         end
 
-        Mdl    = fitcecoc(X_train, Y_train, ...
-                    'Learners', templateSVM('KernelFunction', 'linear'), ...
-                    'Coding', 'onevsall');
+        Mdl    = fitcecoc(X_train, Y_train);
         Y_pred = predict(Mdl, X_test);
 
         accuracy_CV(nsub) = mean(Y_test == Y_pred);
@@ -304,22 +284,3 @@ for n_task = cond_classify
     print(fig, fullfile(save_dir, sprintf('Act_Tval_%s.jpg', cond_labels{n_task})), '-djpeg', '-r300');
 end
 close(fig);
-
-%% ======================== Helper Functions ========================
-
-function plot_bar_with_sem(data, labels, idx)
-    num_cond = length(idx);
-    means = zeros(1, num_cond);
-    sems  = zeros(1, num_cond);
-    for n = 1:num_cond
-        means(n) = mean(data(:, idx(n)));
-        sems(n)  = 1.96 * std(data(:, idx(n))) / sqrt(size(data, 1));
-    end
-
-    figure;
-    bar(means); hold on;
-    errorbar(1:num_cond, means, sems, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
-    set(gca, 'XTickLabel', labels(idx), 'FontName', 'Times New Roman', 'FontSize', 12);
-    ylabel('Beta');
-    hold off;
-end
