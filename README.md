@@ -75,6 +75,7 @@ Scripts are numbered by analysis domain: `Code0*` for HCP resting-state, `Code1*
 | `Code06_Temporal_Fingerprints_cognitive_relavance.m` | Correlation of temporal fingerprints with behavioral factors |
 | `Code07_Heritability_analysis_Temporal.m` | ACE heritability model (APACE) on amplitude fingerprints|
 
+> **Note:** Although only 1-second-ahead prediction results are reported in the paper, the script attempts predictions up to 8 seconds ahead to examine long-term behavior. As a result, 7 fewer scans from the test-fitting segment (480 scans) are used compared to when only 1-second-ahead prediction is attempted.
 > **Note:** `Code06` requires precomputed behavior latent scores from the paper "Exploring the Latent Structure of Behavior Using the Human Connectome Project’s Data" – see [GitHub Repository](https://github.com/connectomicslab/hcp-behavioral-domains) for the analysis code. *For convenience, we provide the precomputed scores as `scores_04_REST1_2_intersect.csv` in the data folder.*
 
 ### Mode Characterization (Code11-14)
