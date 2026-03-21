@@ -59,14 +59,18 @@ result_files = dir('results/MDTB_FCs_rest_sub*');
 N_ROIs = 718;
 
 FC_rest_sub_all = zeros(num_subjects, N_ROIs, N_ROIs, 2);
+nan_idx = true(num_subjects,1);
 for nsub = 1:num_subjects
     res = load(fullfile(result_files(nsub).folder, result_files(nsub).name));
     for nrun = 1:2
         if ~isempty(res.FC_rest_ROIs_vals{1, nrun})
+            nan_idx(nsub) = false;
             FC_rest_sub_all(nsub, :, :, nrun) = res.FC_rest_ROIs_vals{1, nrun};
         end
     end
 end
+
+FC_rest_sub_all(nan_idx,:,:,:) = [];
 
 % Fisher-z average across runs, then across subjects
 FC_rest_sub_all = tanh(mean(atanh(FC_rest_sub_all), 4));
@@ -151,21 +155,6 @@ Group_FC_task = tanh(squeeze(mean(atanh(FC_mean), 1)));
 %  SECTION 5: Task activation & FC reconstruction via INF
 %  ====================================================================
 
-% Precompute temporal evolution matrix
-T_recon = 300;
-d_scaled = exp(1i * mean(progression_rate_list))';
-d_scaled = d_scaled / (d_scaled(1) / (4*pi/T_recon));
-dd_mat = zeros(target_dim, T_recon);
-for t = 1:T_recon
-    dd_mat(:, t) = d_scaled .^ (t - round(T_recon/2));
-end
-
-% Precompute ROI-level spatial modes
-Phi_ROI = zeros(N_ROIs_cortex, size(Phi_orig,2));
-for nr = 1:N_ROIs_cortex
-    Phi_ROI(nr, :) = mean(Phi_orig(label_data == label_idx_list(nr), :));
-end
-
 Task_act_real_tval  = zeros(N_voxel, nn);
 Task_act_recon_tval = zeros(N_voxel, nn);
 recon_beta_all      = zeros(target_dim, nn);
@@ -196,15 +185,14 @@ for n_task = 1:nn
     fprintf('(Act) %s: R = %.4f\n', task_names{n_task}, act_corr(n_task));
 
     % Reconstruct task FC via analytic formula
-    FC_recon_deriv = cal_FC_from_INF(Phi_orig(1:N_cortex,:), lambda, engagement_mean, ...
-        mode_select, label_data(1:N_cortex), angle(b1));
-    FC_recon_deriv = FC_recon_deriv(1:N_ROIs_cortex, 1:N_ROIs_cortex);
+    % FC_recon_deriv = cal_FC_from_INF(Phi_orig(1:N_cortex,:), lambda, engagement_mean, ...
+    %     mode_select, label_data(1:N_cortex), angle(b1));
+    % FC_recon_deriv = FC_recon_deriv(1:N_ROIs_cortex, 1:N_ROIs_cortex);
 
     % Compare with real task FC
     temp_FC_task = Group_FC_task(1:N_ROIs_cortex, 1:N_ROIs_cortex, n_task);
-    temp_FC_rest = Group_FC_rest(1:N_ROIs_cortex, 1:N_ROIs_cortex);
-
-    R_rest_all(n_task)  = corr(temp_FC_rest(tri_idx), temp_FC_task(tri_idx));
+    
+    R_rest_all(n_task)  = corr(Group_FC_rest_cortex(tri_idx), temp_FC_task(tri_idx));
     R_restR_all(n_task) = corr(FC_Recon_rest_cortex(tri_idx), temp_FC_task(tri_idx));
     
     fprintf('(FC) %s: rest-real R=%.4f, rest-recon R=%.4f\n', ...
