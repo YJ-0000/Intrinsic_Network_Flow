@@ -3,7 +3,7 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B, X_seg, Y_seg, w)
 %
 %   INPUT:
 %     X       - (P x T) Original fMRI time-series
-%     U       - (P x M) Intrinsic Network Flow (INF) spatial modes
+%     U       - (P x M) DM vectors
 %     B       - (M x T-1) Mode amplitudes (optional, projected VY if empty)
 %     X_seg   - (P x T') Target time-points (optional,X_next)
 %     Y_seg   - (P x T') Source time-points (optional,X_prev)
@@ -45,7 +45,7 @@ function [D, B_mean,a0_vertex] = computeDMcoefficients(X, U, B, X_seg, Y_seg, w)
         % Z_temp(1,1)
         Z_temp(1,1) = sum(dot(resid_Y, resid_Y, 1));
     
-        % Z_temp(1,2:end) 및 (2:end,1)
+        % Z_temp(1,2:end) and (2:end,1)
         for j = 1:num_DMs
             val = sum(dot(U(:,j)' * resid_Y, VY(j,:), 1));
             Z_temp(1, j+1) = val;

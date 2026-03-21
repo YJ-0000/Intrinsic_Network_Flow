@@ -3,14 +3,9 @@ function [R2_DM_array,R2_DM_array_cortex,R2_DM_array_subcortical, R2_null_array,
     fitting_time_window_list, predict_time_window_list, D_group, is_source_fit, cortex_dim)
 % BENCHMARK_USING_DMS Performance benchmarking using Dynamic Mode Decomposition (DMD)
 %
-%   [R2_DM_array, R2_null_array, R2_lin_array, FIT_LIST, PRED_LIST] = ...
-%       benchmark_using_DMs(DM_vectors, data, source_maps, inv_source_maps)
-%   runs with default TRAINING_RATIO = 0.6,
-%   FITTING_TIME_WINDOW_LIST = [1, 2, 4],
-%   PREDICT_TIME_WINDOW_LIST = [1, 2, 4, 8]
 %
 %   Inputs:
-%     DM_vectors             - DMD mode shapes matrix
+%     DM_vectors             - DMD modes
 %     data                   - Observation data matrix (space × time)
 %     source_maps            - Mapping from latent to observation space
 %     inv_source_maps        - Mapping from observation to latent space
@@ -59,9 +54,10 @@ if ~is_source_fit
     else
         B_seg_array = pinv(DM_vectors) * training_data(:,1:end-1);
         x_obs_pred = real(DM_vectors * (B_seg_array .* D_group));
-        resid_training = training_data(:,2:end) - x_obs_pred;
-        c0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 1:end-1), 1));
-        b0 = sum(dot(resid_training(:, 1:end-1), resid_training(:, 2:end), 1));
+        resid_training = training_data(:,1:end-1) - real(DM_vectors * B_seg_array);
+        resid_pred_training = training_data(:,2:end) - x_obs_pred;
+        c0 = sum(dot(resid_training, resid_training, 1));
+        b0 = sum(dot(resid_training, resid_pred_training, 1));
         D = [real(b0 / c0); D_group];
     end
     
@@ -89,6 +85,7 @@ R2_DM_array_subcortical = nan(n_fit, n_pred);
 R2_null_array = nan(n_fit, n_pred);
 R2_null_array_cortex = nan(n_fit, n_pred);
 R2_null_array_subcortical = nan(n_fit, n_pred);
+R2_lin_array = []; % For compatiblity
 
 % Prepare for sliding-window evaluation
 N_test = size(test_data, 2);
