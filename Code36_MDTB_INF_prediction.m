@@ -181,16 +181,16 @@ save(filename, 'R2_all', 'B_abs_all', 'task_list', 'method_names');
 
 %% ======================== Helper Functions ========================
 
-function R2 = predict_INF(Y_target, Y_test, Phi, D, SS_tot, valid_vox)
+function R2 = predict_INF(X_target, Y_test, Phi, D, SS_tot, valid_vox)
     % INF-based prediction: Phi * (D .* pinv(Phi)*Y) + residual correction
     B = pinv(Phi) * Y_test;
     X_pred = real(Phi * (B .* D(2:end)));
-    X_resid = Y_target - X_pred;
-    X_pred = real(D(1)) * X_resid + X_pred;
-    R2 = compute_R2(Y_target, X_pred, SS_tot, valid_vox);
+    Y_resid = Y_test - X_pred;
+    X_pred = real(D(1)) * Y_resid + X_pred;
+    R2 = compute_R2(X_target, X_pred, SS_tot, valid_vox);
 end
 
-function R2 = compute_R2(Y_target, X_pred, SS_tot, valid_vox)
-    SS_res = mean((Y_target - X_pred).^2, 2);
+function R2 = compute_R2(X_target, X_pred, SS_tot, valid_vox)
+    SS_res = mean((X_target - X_pred).^2, 2);
     R2 = 1 - mean(SS_res(valid_vox) ./ SS_tot(valid_vox), 'omitnan');
 end
