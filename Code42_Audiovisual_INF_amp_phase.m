@@ -15,7 +15,7 @@ flow_include = [1,3,5,7,9,11,13,15,17,19,21,23,27];
 cond_labels = {'AV (noise) 0 SNR', 'AV (No noise)', 'AV (noise) -10 SNR', ...
                'AV (noise) -5 SNR', 'AV (noise) +5 SNR', 'A only (No noise)', ...
                'Null', 'V only'};
-cond_display_order = [7, 6, 2, 5, 1, 4, 3, 8];
+cond_display_order = [7,6, 2, 5, 1, 4, 3, 8];
 cond_classify      = [2,6,8,7];  % AV, A, V, Null
 
 slurm_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
@@ -48,6 +48,7 @@ beta_ampl_vals = nan(num_subjects, num_runs, 8, target_dim);
 beta_sin_vals  = nan(num_subjects, num_runs, 8, target_dim);
 beta_cos_vals  = nan(num_subjects, num_runs, 8, target_dim);
 beta_ic_vals   = nan(num_subjects, num_runs, 8, target_dim);
+beta_act_vals  = nan(num_subjects, num_runs, 8, 91282);
 
 %% Main estimation loop
 for nsub = 1:num_subjects
@@ -150,8 +151,44 @@ for nsub = 1:num_subjects
         motion_confounds = confounds_table{:, motion_cols};
         motion_confounds(isnan(motion_confounds)) = 0;
 
+        X_act = [ones(num_frames, 1), hrf_weights, motion_confounds - mean(motion_confounds)];
+        beta = REML_1stLV_spm(X_act, data_smooth', TR, 128);
+        beta_act_vals(nsub, nrun, :, :) = beta(2:num_type+1, :);
+
         toc
     end
+end
+
+%% Condition-level analysis (Flow #1)
+flow_num = 1;
+
+mean_beta_ampl = squeeze(mean(beta_ampl_vals(:,:,:,flow_num), 2));
+mean_beta_cos  = squeeze(mean(beta_cos_vals(:,:,:,flow_num), 2));
+mean_beta_sin  = squeeze(mean(beta_sin_vals(:,:,:,flow_num), 2));
+
+metric_names = {'Amplitude', 'Cosine (pattern)', 'Sine (progression)'};
+metric_data  = {mean_beta_ampl, mean_beta_cos, mean_beta_sin};
+
+for i_metric = 1:3
+    data_m = metric_data{i_metric};
+    fprintf('\n=== %s ===\n', metric_names{i_metric});
+
+    plot_bar_with_sem(data_m, cond_labels, cond_display_order);
+    title(metric_names{i_metric});
+
+    % Key contrasts vs null (condition 7)
+    contrasts = {6, 'A vs Null'; 8, 'V vs Null'; 2, 'AV vs Null'};
+    for ic = 1:size(contrasts, 1)
+        [~, p, ~, st] = ttest(data_m(:, contrasts{ic,1}), data_m(:, 7));
+        fprintf('  %s: t=%.4f, p=%.6f\n', contrasts{ic,2}, st.tstat, p);
+    end
+
+    % Sequential contrasts along display order
+    p_seq = nan(1, length(cond_display_order)-1);
+    for k = 1:length(cond_display_order)-1
+        [~, p_seq(k)] = ttest(data_m(:, cond_display_order(k)), data_m(:, cond_display_order(k+1)));
+    end
+    fprintf('  Sequential p-values: %s\n', num2str(p_seq, '%.4f '));
 end
 
 %% LOSO Classification
@@ -163,11 +200,12 @@ feature_configs = {
     'Amplitude',           flow_include, {'ampl'};
     'IC activations',      1:target_dim, {'ic'};
     'Phase + Amplitude',   flow_include, {'cos','sin','ampl'};
+    'Activation maps',     [],           {'act'};
 };
 
 fprintf('\n========== CLASSIFICATION (LOSO-CV) ==========\n');
 
-for i_cfg = 1:size(feature_configs, 1)
+for i_cfg = 1:size(feature_configs, 1)-1
     cfg_name     = feature_configs{i_cfg, 1};
     cfg_flows    = feature_configs{i_cfg, 2};
     cfg_features = feature_configs{i_cfg, 3};
@@ -189,8 +227,18 @@ for i_cfg = 1:size(feature_configs, 1)
         end
     end
 
+    % Activation maps: special handling (high-dim → PCA)
+    if ismember('act', cfg_features) && isempty(cfg_flows)
+        X_all = [];
+        for nsub = 1:num_subjects
+            X_all = [X_all; squeeze(beta_act_mean(nsub, cond_classify, :))]; %#ok<AGROW>
+        end
+    end
+
     Y_all  = repmat((1:num_cond)', [num_subjects, 1]);
     groups = reshape(repmat((1:num_subjects)', [1, num_cond])', [], 1);
+
+    use_pca = ismember('act', cfg_features) && isempty(cfg_flows);
 
     accuracy_CV = zeros(num_subjects, 1);
     Y_pred_all  = zeros(size(Y_all));
@@ -203,6 +251,13 @@ for i_cfg = 1:size(feature_configs, 1)
         X_test  = X_all(test_mask, :);
         Y_train = Y_all(train_mask);
         Y_test  = Y_all(test_mask);
+
+        if use_pca
+            mu = mean(X_train);
+            [coeff, score_train] = pca(X_train - mu, 'NumComponents', target_dim, 'Centered', false);
+            X_train = score_train;
+            X_test  = (X_test - mu) * coeff;
+        end
 
         Mdl    = fitcecoc(X_train, Y_train, ...
                     'Learners', templateSVM('KernelFunction', 'linear'), ...
