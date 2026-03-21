@@ -98,25 +98,6 @@ for nsub = 1:length(sub_dirs)
         data_norm = normalize(data.cdata')';
         data_norm(isnan(data_norm)) = 0;
         data_task_sub{nrun} = data_norm;
-
-        % Events
-        event_table = readtable(fullfile(event_files(nrun).folder, event_files(nrun).name), ...
-            'FileType', 'text', 'Delimiter', '\t');
-        trial_types = event_table.taskName;
-        type_list = sort(unique(trial_types));
-        type_list(strcmp(type_list, 'instruct')) = [];
-
-        num_frames = size(data_norm, 2);
-        total_time = TR * num_frames;
-        hrf = zeros(num_frames, length(type_list));
-        for nt = 1:length(type_list)
-            mask_task = strcmp(trial_types, type_list{nt});
-            conv_reg = createTaskRegressor(TR, total_time, event_table.onset(mask_task), ...
-                event_table.duration(mask_task), 16);
-            hrf(:, nt) = conv_reg(1:num_frames);
-        end
-        hrf_weights_sub{nrun} = hrf;
-        task_list{nsub, nrun} = type_list;
     end
 
     %% Prediction — leave-one-run-out
@@ -177,7 +158,7 @@ if isnan(slurm_id)
 else
     filename = sprintf('results/MDTB_BOLD_prediction_sub%02d', slurm_id);
 end
-save(filename, 'R2_all', 'B_abs_all', 'task_list', 'method_names');
+save(filename, 'R2_all', 'B_abs_all', 'method_names');
 
 %% ======================== Helper Functions ========================
 
