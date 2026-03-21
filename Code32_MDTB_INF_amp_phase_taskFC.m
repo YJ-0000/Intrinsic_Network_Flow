@@ -20,7 +20,7 @@ path_info = load('secure_info/path_info.mat');
 mdtb_data_path        = path_info.mdtb_preproc_data_path;
 mdtb_data_unprocessed = path_info.mdtb_bids_data_path;
 
-%% Load group-level ICA-DMD results
+%% Load group-level INF results
 g_ica_result_files = dir(sprintf('results/INF_G_lev_%s_ALL_%03d_MIGP_results_*.mat', REST_num, target_dim));
 load_results = load(fullfile(g_ica_result_files(end).folder, g_ica_result_files(end).name));
 
@@ -127,9 +127,9 @@ for nsub = 1:num_subs
 
         % ICA time courses
         IC_tc     = inv_source * data_norm;
-        IC_sub_tc = pinv(source_maps) * data_norm;
+        % IC_sub_tc = pinv(source_maps) * data_norm;
 
-        % Subject-level spatial modes
+        % Voxel-level spatial modes
         Phi_sub = source_maps * Phi_all;
 
         % Compute temporal coefficients via sliding DMD
@@ -166,7 +166,7 @@ for nsub = 1:num_subs
         % --- ICA betas via ReML ---
         fprintf('    ReML: ICs...\n');
         try
-            b = REML_spm(X, IC_sub_tc');
+            b = REML_spm(X, IC_tc');
             beta_ic_vals{nsub, nrun} = b(2:end, :);
         catch e
             warning(sprintf('Error in IC ReML: %s', e.message)); %#ok<SPWRN>
