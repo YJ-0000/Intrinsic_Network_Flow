@@ -185,7 +185,7 @@ function R2 = predict_INF(X_target, Y_test, Phi, D, SS_tot, valid_vox)
     % INF-based prediction: Phi * (D .* pinv(Phi)*Y) + residual correction
     B = pinv(Phi) * Y_test;
     X_pred = real(Phi * (B .* D(2:end)));
-    Y_resid = Y_test - X_pred;
+    Y_resid = Y_test - real(Phi * B);
     X_pred = real(D(1)) * Y_resid + X_pred;
     R2 = compute_R2(X_target, X_pred, SS_tot, valid_vox);
 end
