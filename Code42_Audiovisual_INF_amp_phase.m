@@ -135,8 +135,8 @@ for nsub = 1:num_subjects
         beta_sin_vals(nsub, nrun, :, :) = b(2:end, :);
 
         % ICA betas via ReML
-        IC_sub_tc = pinv(sm_maps) * data_norm;
-        b = REML_spm(X, IC_sub_tc');
+        % IC_sub_tc = pinv(sm_maps) * data_norm;
+        b = REML_spm(X, IC_tc');
         beta_ic_vals(nsub, nrun, :, :) = b(2:end, :);
 
         % Activation betas (smoothed data + motion confounds)
