@@ -17,8 +17,8 @@ TR = 2.47;
 Fs = 1/TR;  % Hz
 
 % Define the frequency range for the band-pass filter
-lowCutoff = 0.01;  % Hz
-highCutoff = 0.1;  % Hz
+lowCutoff = 0.008;  % Hz
+highCutoff = 0.15;  % Hz
 %%
 sub_AS_dirs = dir(fullfile(as_data_path,'sub-*'));
 sub_AS_dirs = sub_AS_dirs([sub_AS_dirs.isdir]);
@@ -33,7 +33,12 @@ for nsub = 1:num_subjects
         fullfile(sub_AS_dirs(nsub).folder,sub_AS_dirs(nsub).name,'func','*space-fsLR_den-91k_desc-8mmSmoothed_bold.dtseries.nii'));
     confounds_file = dir(...
             fullfile(sub_AS_dirs(nsub).folder,sub_AS_dirs(nsub).name,'func','*confounds_timeseries.tsv'));
-        
+    
+    %%% sort and check matching
+    [is_matched, cifti_file, confounds_file] ...
+        = check_bids_match(cifti_file, confounds_file, true);
+    assert(is_matched, 'Confound files are not matching.');
+    
     for nrun = 1:length(cifti_file)
         cifti_file_path = fullfile(cifti_file(nrun).folder,cifti_file(nrun).name);
     
